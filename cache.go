@@ -10,7 +10,7 @@ import (
 	"github.com/romanodesouza/cachebox/storage"
 )
 
-// Cache handles the cache storage.
+// Cache handles a cache storage.
 type Cache struct {
 	storage storage.Storage
 }
@@ -21,28 +21,30 @@ func NewCache(storage storage.Storage) *Cache {
 }
 
 // Get performs a get call in the cache storage.
+//
 // In case of refresh or bypass, it returns (nil, nil) to fake a miss and skip the call.
 func (c *Cache) Get(ctx context.Context, key string) ([]byte, error) {
 	if IsRefresh(ctx) || IsBypass(ctx) {
 		return nil, nil
 	}
 
-	b, err := c.storage.Get(ctx, key)
+	bb, err := c.storage.MGet(ctx, key)
 	if err != nil {
 		return nil, err
 	}
 
-	return b, nil
+	return bb[0], nil
 }
 
 // GetMulti performs a get multi call in the cache storage.
+//
 // In case of refresh or bypass, it returns (nil, nil) to fake a miss and skip the call.
 func (c *Cache) GetMulti(ctx context.Context, keys []string) ([][]byte, error) {
 	if IsRefresh(ctx) || IsBypass(ctx) {
 		return nil, nil
 	}
 
-	bb, err := c.storage.MGet(ctx, keys)
+	bb, err := c.storage.MGet(ctx, keys...)
 	if err != nil {
 		return nil, err
 	}
@@ -54,6 +56,7 @@ func (c *Cache) GetMulti(ctx context.Context, keys []string) ([][]byte, error) {
 type Item storage.Item
 
 // Set performs a set call in the cache storage.
+//
 // In case of bypass, it returns nil to skip the call.
 func (c *Cache) Set(ctx context.Context, item Item) error {
 	if IsBypass(ctx) {
@@ -64,6 +67,7 @@ func (c *Cache) Set(ctx context.Context, item Item) error {
 }
 
 // SetMulti performs a set multi call in the cache storage.
+//
 // In case of bypass, it returns nil to skip the call.
 func (c *Cache) SetMulti(ctx context.Context, items []Item) error {
 	if IsBypass(ctx) {
@@ -79,6 +83,7 @@ func (c *Cache) SetMulti(ctx context.Context, items []Item) error {
 }
 
 // Delete performs a delete call in the cache storage.
+//
 // In case of bypass, it returns nil to skip the call.
 func (c *Cache) Delete(ctx context.Context, key string) error {
 	if IsBypass(ctx) {
@@ -89,6 +94,7 @@ func (c *Cache) Delete(ctx context.Context, key string) error {
 }
 
 // DeleteMulti performs a delete multi call in the cache storage.
+//
 // In case of bypass, it returns nil to skip the call.
 func (c *Cache) DeleteMulti(ctx context.Context, keys []string) error {
 	if IsBypass(ctx) {

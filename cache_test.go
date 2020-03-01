@@ -54,7 +54,7 @@ func TestCache_Get(t *testing.T) {
 			key:  "test_key",
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
 				store := mock_storage.NewMockStorage(ctrl)
-				store.EXPECT().Get(gomock.Any(), "test_key").Return(nil, errors.New("storage: get error"))
+				store.EXPECT().MGet(gomock.Any(), "test_key").Return(nil, errors.New("storage: get error"))
 
 				return cachebox.NewCache(store)
 			},
@@ -67,7 +67,7 @@ func TestCache_Get(t *testing.T) {
 			key:  "test_key",
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
 				store := mock_storage.NewMockStorage(ctrl)
-				store.EXPECT().Get(gomock.Any(), "test_key").Return([]byte("ok"), nil)
+				store.EXPECT().MGet(gomock.Any(), "test_key").Return([][]byte{[]byte("ok")}, nil)
 
 				return cachebox.NewCache(store)
 			},

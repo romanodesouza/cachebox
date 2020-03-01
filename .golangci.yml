@@ -24,6 +24,8 @@ linters:
   disable:
     - gochecknoglobals
     - stylecheck
+    - gomnd
+    - dupl
   fast: false
 
 linters-settings:

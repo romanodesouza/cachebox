@@ -11,6 +11,7 @@ type key struct{ name string }
 var refreshKey = key{"refresh"}
 
 // WithRefresh returns a context with refresh state.
+//
 // A refresh state bypasses cache reading to force updating the current cache state.
 // Use this to precompute values.
 func WithRefresh(ctx context.Context) context.Context {
@@ -26,6 +27,7 @@ func IsRefresh(ctx context.Context) bool {
 var bypassKey = key{"bypass"}
 
 // WithBypass returns a context with bypass state.
+//
 // A bypass state bypasses both cache reading and writing.
 // Use this to skip the cache layer.
 func WithBypass(ctx context.Context) context.Context {
