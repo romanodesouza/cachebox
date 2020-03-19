@@ -26,13 +26,13 @@ func TestNewHooksWrap(t *testing.T) {
 		store.EXPECT().MGet(gomock.Any(), gomock.Any()).Return([][]byte{[]byte("ok")}, nil)
 
 		wrap := storage.NewHooksWrap(store, storage.Hooks{
-			AfterMGet: func(ctx context.Context, b []byte, key string) ([]byte, error) {
+			AfterMGet: func(ctx context.Context, key string, b []byte) ([]byte, error) {
 				return append(b, []byte("first")...), nil
 			},
 		})
 
 		wrap = storage.NewHooksWrap(wrap, storage.Hooks{
-			AfterMGet: func(ctx context.Context, b []byte, key string) ([]byte, error) {
+			AfterMGet: func(ctx context.Context, key string, b []byte) ([]byte, error) {
 				return append(b, []byte("second")...), nil
 			},
 		})
@@ -64,7 +64,7 @@ func TestHooksWrap_MGet(t *testing.T) {
 				return store
 			},
 			hooks: []storage.Hooks{{
-				AfterMGet: func(ctx context.Context, b []byte, key string) ([]byte, error) {
+				AfterMGet: func(ctx context.Context, key string, b []byte) ([]byte, error) {
 					return b, nil
 				},
 			}},
@@ -80,7 +80,7 @@ func TestHooksWrap_MGet(t *testing.T) {
 				return store
 			},
 			hooks: []storage.Hooks{{
-				AfterMGet: func(ctx context.Context, b []byte, key string) ([]byte, error) {
+				AfterMGet: func(ctx context.Context, key string, b []byte) ([]byte, error) {
 					return nil, errors.New("hooks: after mget error")
 				},
 			}},
@@ -102,7 +102,7 @@ func TestHooksWrap_MGet(t *testing.T) {
 				return store
 			},
 			hooks: []storage.Hooks{{
-				AfterMGet: func(ctx context.Context, b []byte, key string) ([]byte, error) {
+				AfterMGet: func(ctx context.Context, key string, b []byte) ([]byte, error) {
 					return append(b, []byte(" transformed")...), nil
 				},
 			}},
@@ -128,12 +128,12 @@ func TestHooksWrap_MGet(t *testing.T) {
 			},
 			hooks: []storage.Hooks{
 				{
-					AfterMGet: func(ctx context.Context, b []byte, key string) ([]byte, error) {
+					AfterMGet: func(ctx context.Context, key string, b []byte) ([]byte, error) {
 						return append(b, []byte("1")...), nil
 					},
 				},
 				{
-					AfterMGet: func(ctx context.Context, b []byte, key string) ([]byte, error) {
+					AfterMGet: func(ctx context.Context, key string, b []byte) ([]byte, error) {
 						return append(b, []byte("2")...), nil
 					},
 				},

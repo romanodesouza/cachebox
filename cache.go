@@ -16,8 +16,14 @@ type Cache struct {
 }
 
 // NewCache returns a new Cache instance.
-func NewCache(storage storage.Storage) *Cache {
-	return &Cache{storage: storage}
+func NewCache(storage storage.Storage, opts ...func(*Cache)) *Cache {
+	c := &Cache{storage: storage}
+
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	return c
 }
 
 // Get performs a get call in the cache storage.

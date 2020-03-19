@@ -4,13 +4,21 @@
 
 package storage
 
-import "context"
+import (
+	"context"
+)
+
+// Hooks represents hooks to get executed after or before storage functions.
+type Hooks struct {
+	AfterMGet func(ctx context.Context, key string, b []byte) ([]byte, error)
+	BeforeSet func(ctx context.Context, item Item) (Item, error)
+}
 
 // HooksWrap holds a storage interface, wrapping hooks over it.
 type HooksWrap struct {
 	Storage
 
-	afterMGet []func(ctx context.Context, b []byte, key string) ([]byte, error)
+	afterMGet []func(ctx context.Context, key string, b []byte) ([]byte, error)
 	beforeSet []func(ctx context.Context, item Item) (Item, error)
 }
 
@@ -48,7 +56,7 @@ func (h *HooksWrap) MGet(ctx context.Context, keys ...string) ([][]byte, error) 
 		for i := range bb {
 			for _, hook := range h.afterMGet {
 				var err error
-				bb[i], err = hook(ctx, bb[i], keys[i])
+				bb[i], err = hook(ctx, keys[i], bb[i])
 
 				if err != nil {
 					return nil, err
@@ -76,10 +84,4 @@ func (h *HooksWrap) Set(ctx context.Context, items ...Item) error {
 	}
 
 	return h.Storage.Set(ctx, items...)
-}
-
-// Hooks represents hooks to get executed after or before storage functions.
-type Hooks struct {
-	AfterMGet func(ctx context.Context, b []byte, key string) ([]byte, error)
-	BeforeSet func(ctx context.Context, item Item) (Item, error)
 }
