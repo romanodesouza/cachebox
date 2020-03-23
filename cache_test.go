@@ -31,7 +31,7 @@ func TestCache_Get(t *testing.T) {
 		{
 			name: "it should skip the call when refreshing",
 			ctx:  cachebox.WithRefresh(context.Background()),
-			key:  "test_key",
+			key:  "key",
 			cache: func(_ *gomock.Controller) *cachebox.Cache {
 				return cachebox.NewCache(nil)
 			},
@@ -41,7 +41,7 @@ func TestCache_Get(t *testing.T) {
 		{
 			name: "it should skip the call when bypassing",
 			ctx:  cachebox.WithBypass(context.Background()),
-			key:  "test_key",
+			key:  "key",
 			cache: func(_ *gomock.Controller) *cachebox.Cache {
 				return cachebox.NewCache(nil)
 			},
@@ -51,10 +51,10 @@ func TestCache_Get(t *testing.T) {
 		{
 			name: "it should return the storage error when it occurs",
 			ctx:  context.Background(),
-			key:  "test_key",
+			key:  "key",
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
 				store := mock_storage.NewMockStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), "test_key").Return(nil, errors.New("storage: get error"))
+				store.EXPECT().MGet(gomock.Any(), "key").Return(nil, errors.New("storage: get error"))
 
 				return cachebox.NewCache(store)
 			},
@@ -64,10 +64,10 @@ func TestCache_Get(t *testing.T) {
 		{
 			name: "it should return the storage bytes when it succeeds",
 			ctx:  context.Background(),
-			key:  "test_key",
+			key:  "key",
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
 				store := mock_storage.NewMockStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), "test_key").Return([][]byte{[]byte("ok")}, nil)
+				store.EXPECT().MGet(gomock.Any(), "key").Return([][]byte{[]byte("ok")}, nil)
 
 				return cachebox.NewCache(store)
 			},
@@ -108,7 +108,7 @@ func TestCache_GetMulti(t *testing.T) {
 		{
 			name: "it should skip the call when refreshing",
 			ctx:  cachebox.WithRefresh(context.Background()),
-			keys: []string{"test_key1", "test_key2"},
+			keys: []string{"key1", "key2"},
 			cache: func(_ *gomock.Controller) *cachebox.Cache {
 				return cachebox.NewCache(nil)
 			},
@@ -118,7 +118,7 @@ func TestCache_GetMulti(t *testing.T) {
 		{
 			name: "it should skip the call when bypassing",
 			ctx:  cachebox.WithBypass(context.Background()),
-			keys: []string{"test_key1", "test_key2"},
+			keys: []string{"key1", "key2"},
 			cache: func(_ *gomock.Controller) *cachebox.Cache {
 				return cachebox.NewCache(nil)
 			},
@@ -128,10 +128,10 @@ func TestCache_GetMulti(t *testing.T) {
 		{
 			name: "it should return the storage error when it occurs",
 			ctx:  context.Background(),
-			keys: []string{"test_key1", "test_key2"},
+			keys: []string{"key1", "key2"},
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
 				store := mock_storage.NewMockStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), []string{"test_key1", "test_key2"}).
+				store.EXPECT().MGet(gomock.Any(), []string{"key1", "key2"}).
 					Return(nil, errors.New("storage: get multi error"))
 
 				return cachebox.NewCache(store)
@@ -142,10 +142,10 @@ func TestCache_GetMulti(t *testing.T) {
 		{
 			name: "it should return the storage bytes when it succeeds",
 			ctx:  context.Background(),
-			keys: []string{"test_key1", "test_key2"},
+			keys: []string{"key1", "key2"},
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
 				store := mock_storage.NewMockStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), []string{"test_key1", "test_key2"}).
+				store.EXPECT().MGet(gomock.Any(), []string{"key1", "key2"}).
 					Return([][]byte{[]byte("ok"), []byte("ok")}, nil)
 
 				return cachebox.NewCache(store)
@@ -187,7 +187,7 @@ func TestCache_Set(t *testing.T) {
 			name: "it should skip the call when bypassing",
 			ctx:  cachebox.WithBypass(context.Background()),
 			item: cachebox.Item{
-				Key:   "test_key",
+				Key:   "key",
 				Value: []byte("ok"),
 				TTL:   time.Minute,
 			},
@@ -200,14 +200,14 @@ func TestCache_Set(t *testing.T) {
 			name: "it should return the storage error when it occurs",
 			ctx:  context.Background(),
 			item: cachebox.Item{
-				Key:   "test_key",
+				Key:   "key",
 				Value: []byte("ok"),
 				TTL:   time.Minute,
 			},
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
 				store := mock_storage.NewMockStorage(ctrl)
 				store.EXPECT().Set(gomock.Any(), storage.Item{
-					Key:   "test_key",
+					Key:   "key",
 					Value: []byte("ok"),
 					TTL:   time.Minute,
 				}).Return(errors.New("storage: set error"))
@@ -220,14 +220,14 @@ func TestCache_Set(t *testing.T) {
 			name: "it should return nil when it succeeds",
 			ctx:  context.Background(),
 			item: cachebox.Item{
-				Key:   "test_key",
+				Key:   "key",
 				Value: []byte("ok"),
 				TTL:   time.Minute,
 			},
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
 				store := mock_storage.NewMockStorage(ctrl)
 				store.EXPECT().Set(gomock.Any(), storage.Item{
-					Key:   "test_key",
+					Key:   "key",
 					Value: []byte("ok"),
 					TTL:   time.Minute,
 				}).Return(nil)
@@ -267,12 +267,12 @@ func TestCache_SetMulti(t *testing.T) {
 			ctx:  cachebox.WithBypass(context.Background()),
 			items: []cachebox.Item{
 				{
-					Key:   "test_key1",
+					Key:   "key1",
 					Value: []byte("ok"),
 					TTL:   time.Minute,
 				},
 				{
-					Key:   "test_key2",
+					Key:   "key2",
 					Value: []byte("ok"),
 					TTL:   time.Minute,
 				},
@@ -287,12 +287,12 @@ func TestCache_SetMulti(t *testing.T) {
 			ctx:  context.Background(),
 			items: []cachebox.Item{
 				{
-					Key:   "test_key1",
+					Key:   "key1",
 					Value: []byte("ok"),
 					TTL:   time.Minute,
 				},
 				{
-					Key:   "test_key2",
+					Key:   "key2",
 					Value: []byte("ok"),
 					TTL:   time.Minute,
 				},
@@ -301,12 +301,12 @@ func TestCache_SetMulti(t *testing.T) {
 				store := mock_storage.NewMockStorage(ctrl)
 				store.EXPECT().Set(gomock.Any(), []storage.Item{
 					{
-						Key:   "test_key1",
+						Key:   "key1",
 						Value: []byte("ok"),
 						TTL:   time.Minute,
 					},
 					{
-						Key:   "test_key2",
+						Key:   "key2",
 						Value: []byte("ok"),
 						TTL:   time.Minute,
 					},
@@ -321,12 +321,12 @@ func TestCache_SetMulti(t *testing.T) {
 			ctx:  context.Background(),
 			items: []cachebox.Item{
 				{
-					Key:   "test_key1",
+					Key:   "key1",
 					Value: []byte("ok"),
 					TTL:   time.Minute,
 				},
 				{
-					Key:   "test_key2",
+					Key:   "key2",
 					Value: []byte("ok"),
 					TTL:   time.Minute,
 				},
@@ -335,12 +335,12 @@ func TestCache_SetMulti(t *testing.T) {
 				store := mock_storage.NewMockStorage(ctrl)
 				store.EXPECT().Set(gomock.Any(), []storage.Item{
 					{
-						Key:   "test_key1",
+						Key:   "key1",
 						Value: []byte("ok"),
 						TTL:   time.Minute,
 					},
 					{
-						Key:   "test_key2",
+						Key:   "key2",
 						Value: []byte("ok"),
 						TTL:   time.Minute,
 					},
@@ -379,7 +379,7 @@ func TestCache_Delete(t *testing.T) {
 		{
 			name: "it should skip the call when bypassing",
 			ctx:  cachebox.WithBypass(context.Background()),
-			key:  "test_key",
+			key:  "key",
 			cache: func(_ *gomock.Controller) *cachebox.Cache {
 				return cachebox.NewCache(nil)
 			},
@@ -388,10 +388,10 @@ func TestCache_Delete(t *testing.T) {
 		{
 			name: "it should return the storage error when it occurs",
 			ctx:  context.Background(),
-			key:  "test_key",
+			key:  "key",
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
 				store := mock_storage.NewMockStorage(ctrl)
-				store.EXPECT().Delete(gomock.Any(), "test_key").Return(errors.New("storage: delete error"))
+				store.EXPECT().Delete(gomock.Any(), "key").Return(errors.New("storage: delete error"))
 
 				return cachebox.NewCache(store)
 			},
@@ -400,10 +400,10 @@ func TestCache_Delete(t *testing.T) {
 		{
 			name: "it should return nil when it succeeds",
 			ctx:  context.Background(),
-			key:  "test_key",
+			key:  "key",
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
 				store := mock_storage.NewMockStorage(ctrl)
-				store.EXPECT().Delete(gomock.Any(), "test_key").Return(nil)
+				store.EXPECT().Delete(gomock.Any(), "key").Return(nil)
 
 				return cachebox.NewCache(store)
 			},
@@ -438,7 +438,7 @@ func TestCache_DeleteMulti(t *testing.T) {
 		{
 			name: "it should skip the call when bypassing",
 			ctx:  cachebox.WithBypass(context.Background()),
-			keys: []string{"test_key1", "test_key2"},
+			keys: []string{"key1", "key2"},
 			cache: func(_ *gomock.Controller) *cachebox.Cache {
 				return cachebox.NewCache(nil)
 			},
@@ -447,10 +447,10 @@ func TestCache_DeleteMulti(t *testing.T) {
 		{
 			name: "it should return the storage error when it occurs",
 			ctx:  context.Background(),
-			keys: []string{"test_key1", "test_key2"},
+			keys: []string{"key1", "key2"},
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
 				store := mock_storage.NewMockStorage(ctrl)
-				store.EXPECT().Delete(gomock.Any(), "test_key1", "test_key2").Return(errors.New("storage: delete error"))
+				store.EXPECT().Delete(gomock.Any(), "key1", "key2").Return(errors.New("storage: delete error"))
 
 				return cachebox.NewCache(store)
 			},
@@ -459,10 +459,10 @@ func TestCache_DeleteMulti(t *testing.T) {
 		{
 			name: "it should return nil when it succeeds",
 			ctx:  context.Background(),
-			keys: []string{"test_key1", "test_key2"},
+			keys: []string{"key1", "key2"},
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
 				store := mock_storage.NewMockStorage(ctrl)
-				store.EXPECT().Delete(gomock.Any(), "test_key1", "test_key2").Return(nil)
+				store.EXPECT().Delete(gomock.Any(), "key1", "key2").Return(nil)
 
 				return cachebox.NewCache(store)
 			},

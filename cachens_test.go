@@ -30,7 +30,7 @@ func TestCacheNS_GetMostRecentTimestamp(t *testing.T) {
 		{
 			name: "it should skip the call when bypassing",
 			ctx:  cachebox.WithBypass(context.Background()),
-			keys: []string{"test_nskey1", "test_nskey2"},
+			keys: []string{"nskey1", "nskey2"},
 			cachens: func(_ *gomock.Controller) *cachebox.CacheNS {
 				now := time.Date(2020, 1, 1, 1, 1, 1, 1, time.UTC)
 				cachebox.Now = func() time.Time { return now }
@@ -43,10 +43,10 @@ func TestCacheNS_GetMostRecentTimestamp(t *testing.T) {
 		{
 			name: "it should return the most recent timestamp",
 			ctx:  context.Background(),
-			keys: []string{"test_nskey1", "test_nskey2"},
+			keys: []string{"nskey1", "nskey2"},
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_storage.NewMockNamespaceStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), "test_nskey1", "test_nskey2").
+				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2").
 					Return([][]byte{
 						marshalInt64(1577840451000000001),
 						marshalInt64(1577840461000000001),
@@ -61,10 +61,10 @@ func TestCacheNS_GetMostRecentTimestamp(t *testing.T) {
 		{
 			name: "it should recompute and set any miss, but also return the most recent timestamp",
 			ctx:  context.Background(),
-			keys: []string{"test_nskey1", "test_nskey2", "test_nskey3", "test_nskey4"},
+			keys: []string{"nskey1", "nskey2", "nskey3", "nskey4"},
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_storage.NewMockNamespaceStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), "test_nskey1", "test_nskey2", "test_nskey3", "test_nskey4").
+				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "nskey3", "nskey4").
 					Return([][]byte{
 						marshalInt64(1577840441000000001),
 						marshalInt64(1577840451000000001),
@@ -74,8 +74,8 @@ func TestCacheNS_GetMostRecentTimestamp(t *testing.T) {
 
 				now := time.Date(2020, 1, 1, 1, 1, 1, 1, time.UTC)
 				store.EXPECT().Set(gomock.Any(), []storage.Item{
-					{Key: "test_nskey3", Value: marshalInt64(now.UnixNano()), TTL: 24 * time.Hour},
-					{Key: "test_nskey4", Value: marshalInt64(now.UnixNano()), TTL: 24 * time.Hour},
+					{Key: "nskey3", Value: marshalInt64(now.UnixNano()), TTL: 24 * time.Hour},
+					{Key: "nskey4", Value: marshalInt64(now.UnixNano()), TTL: 24 * time.Hour},
 				})
 
 				cachebox.Now = func() time.Time { return now }
@@ -87,16 +87,16 @@ func TestCacheNS_GetMostRecentTimestamp(t *testing.T) {
 		},
 		{
 			name: "it should use user defined ttl",
-			keys: []string{"test_nskey1"},
+			keys: []string{"nskey1"},
 			ctx:  context.Background(),
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_storage.NewMockNamespaceStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), "test_nskey1").
+				store.EXPECT().MGet(gomock.Any(), "nskey1").
 					Return([][]byte{nil}, nil)
 
 				now := time.Date(2020, 1, 1, 1, 1, 1, 1, time.UTC)
 				store.EXPECT().Set(gomock.Any(), []storage.Item{
-					{Key: "test_nskey1", Value: marshalInt64(now.UnixNano()), TTL: time.Hour},
+					{Key: "nskey1", Value: marshalInt64(now.UnixNano()), TTL: time.Hour},
 				})
 
 				cachebox.Now = func() time.Time { return now }
@@ -109,15 +109,15 @@ func TestCacheNS_GetMostRecentTimestamp(t *testing.T) {
 		{
 			name: "it should return storage error on set and current clock time",
 			ctx:  context.Background(),
-			keys: []string{"test_nskey1"},
+			keys: []string{"nskey1"},
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_storage.NewMockNamespaceStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), "test_nskey1").
+				store.EXPECT().MGet(gomock.Any(), "nskey1").
 					Return([][]byte{nil}, nil)
 
 				now := time.Date(2020, 1, 1, 1, 1, 1, 1, time.UTC)
 				store.EXPECT().Set(gomock.Any(), []storage.Item{
-					{Key: "test_nskey1", Value: marshalInt64(now.UnixNano()), TTL: 24 * time.Hour},
+					{Key: "nskey1", Value: marshalInt64(now.UnixNano()), TTL: 24 * time.Hour},
 				}).Return(errors.New("namespacestorage: set error"))
 
 				cachebox.Now = func() time.Time { return now }
@@ -130,10 +130,10 @@ func TestCacheNS_GetMostRecentTimestamp(t *testing.T) {
 		{
 			name: "it should return storage error on mget and current clock time",
 			ctx:  context.Background(),
-			keys: []string{"test_nskey1"},
+			keys: []string{"nskey1"},
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_storage.NewMockNamespaceStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), "test_nskey1").
+				store.EXPECT().MGet(gomock.Any(), "nskey1").
 					Return([][]byte{nil}, errors.New("namespacestorage: mget error"))
 
 				now := time.Date(2020, 1, 1, 1, 1, 1, 1, time.UTC)
@@ -177,7 +177,7 @@ func TestCacheNS_Delete(t *testing.T) {
 		{
 			name: "it should skip the call when bypassing",
 			ctx:  cachebox.WithBypass(context.Background()),
-			key:  "test_nskey",
+			key:  "nskey",
 			cachens: func(_ *gomock.Controller) *cachebox.CacheNS {
 				return cachebox.NewCacheNS(nil)
 			},
@@ -186,10 +186,10 @@ func TestCacheNS_Delete(t *testing.T) {
 		{
 			name: "it should return the storage error when it occurs",
 			ctx:  context.Background(),
-			key:  "test_nskey",
+			key:  "nskey",
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_storage.NewMockNamespaceStorage(ctrl)
-				store.EXPECT().Delete(gomock.Any(), "test_nskey").Return(errors.New("namespacestorage: delete error"))
+				store.EXPECT().Delete(gomock.Any(), "nskey").Return(errors.New("namespacestorage: delete error"))
 
 				return cachebox.NewCacheNS(store)
 			},
@@ -198,10 +198,10 @@ func TestCacheNS_Delete(t *testing.T) {
 		{
 			name: "it should return nil when it succeeds",
 			ctx:  context.Background(),
-			key:  "test_nskey",
+			key:  "nskey",
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_storage.NewMockNamespaceStorage(ctrl)
-				store.EXPECT().Delete(gomock.Any(), "test_nskey").Return(nil)
+				store.EXPECT().Delete(gomock.Any(), "nskey").Return(nil)
 
 				return cachebox.NewCacheNS(store)
 			},
@@ -236,7 +236,7 @@ func TestCacheNS_DeleteMulti(t *testing.T) {
 		{
 			name: "it should skip the call when bypassing",
 			ctx:  cachebox.WithBypass(context.Background()),
-			keys: []string{"test_nskey1", "test_nskey2"},
+			keys: []string{"nskey1", "nskey2"},
 			cachens: func(_ *gomock.Controller) *cachebox.CacheNS {
 				return cachebox.NewCacheNS(nil)
 			},
@@ -245,10 +245,10 @@ func TestCacheNS_DeleteMulti(t *testing.T) {
 		{
 			name: "it should return the storage error when it occurs",
 			ctx:  context.Background(),
-			keys: []string{"test_nskey1", "test_nskey2"},
+			keys: []string{"nskey1", "nskey2"},
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_storage.NewMockNamespaceStorage(ctrl)
-				store.EXPECT().Delete(gomock.Any(), "test_nskey1", "test_nskey2").
+				store.EXPECT().Delete(gomock.Any(), "nskey1", "nskey2").
 					Return(errors.New("namespacestorage: delete error"))
 
 				return cachebox.NewCacheNS(store)
@@ -258,10 +258,10 @@ func TestCacheNS_DeleteMulti(t *testing.T) {
 		{
 			name: "it should return nil when it succeeds",
 			ctx:  context.Background(),
-			keys: []string{"test_nskey1", "test_nskey2"},
+			keys: []string{"nskey1", "nskey2"},
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_storage.NewMockNamespaceStorage(ctrl)
-				store.EXPECT().Delete(gomock.Any(), "test_nskey1", "test_nskey2").Return(nil)
+				store.EXPECT().Delete(gomock.Any(), "nskey1", "nskey2").Return(nil)
 
 				return cachebox.NewCacheNS(store)
 			},
