@@ -29,8 +29,8 @@ func TestCache_Get(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "it should skip the call when refreshing",
-			ctx:  cachebox.WithRefresh(context.Background()),
+			name: "it should skip the call when recomputing",
+			ctx:  cachebox.WithRecompute(context.Background()),
 			key:  "key",
 			cache: func(_ *gomock.Controller) *cachebox.Cache {
 				return cachebox.NewCache(nil)
@@ -106,8 +106,8 @@ func TestCache_GetMulti(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "it should skip the call when refreshing",
-			ctx:  cachebox.WithRefresh(context.Background()),
+			name: "it should skip the call when recomputing",
+			ctx:  cachebox.WithRecompute(context.Background()),
 			keys: []string{"key1", "key2"},
 			cache: func(_ *gomock.Controller) *cachebox.Cache {
 				return cachebox.NewCache(nil)
@@ -481,6 +481,66 @@ func TestCache_DeleteMulti(t *testing.T) {
 
 			if fmt.Sprintf("%v", err) != fmt.Sprintf("%v", tt.wantErr) {
 				t.Errorf("got %v; want %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestIsRecompute(t *testing.T) {
+	tests := []struct {
+		name string
+		want bool
+		ctx  context.Context
+	}{
+		{
+			name: "it should return false when it doesn't have the recompute state",
+			want: false,
+			ctx:  context.Background(),
+		},
+		{
+			name: "it should return true when it does have the recompute state",
+			want: true,
+			ctx:  cachebox.WithRecompute(context.Background()),
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			got := cachebox.IsRecompute(tt.ctx)
+
+			if tt.want != got {
+				t.Errorf("want %t, got %t", tt.want, got)
+			}
+		})
+	}
+}
+
+func TestIsBypass(t *testing.T) {
+	tests := []struct {
+		name string
+		want bool
+		ctx  context.Context
+	}{
+		{
+			name: "it should return false when it doesn't have the bypass state",
+			want: false,
+			ctx:  context.Background(),
+		},
+		{
+			name: "it should return true when it does have the bypass state",
+			want: true,
+			ctx:  cachebox.WithBypass(context.Background()),
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			got := cachebox.IsBypass(tt.ctx)
+
+			if tt.want != got {
+				t.Errorf("want %t, got %t", tt.want, got)
 			}
 		})
 	}

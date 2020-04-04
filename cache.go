@@ -28,9 +28,9 @@ func NewCache(storage storage.Storage, opts ...func(*Cache)) *Cache {
 
 // Get performs a get call in the cache storage.
 //
-// In case of refresh or bypass, it returns (nil, nil) to fake a miss and skip the call.
+// In case of recompute or bypass, it returns (nil, nil) to fake a miss and skip the call.
 func (c *Cache) Get(ctx context.Context, key string) ([]byte, error) {
-	if IsRefresh(ctx) || IsBypass(ctx) {
+	if IsRecompute(ctx) || IsBypass(ctx) {
 		return nil, nil
 	}
 
@@ -44,9 +44,9 @@ func (c *Cache) Get(ctx context.Context, key string) ([]byte, error) {
 
 // GetMulti performs a get multi call in the cache storage.
 //
-// In case of refresh or bypass, it returns (nil, nil) to fake a miss and skip the call.
+// In case of recompute or bypass, it returns (nil, nil) to fake a miss and skip the call.
 func (c *Cache) GetMulti(ctx context.Context, keys []string) ([][]byte, error) {
-	if IsRefresh(ctx) || IsBypass(ctx) {
+	if IsRecompute(ctx) || IsBypass(ctx) {
 		return nil, nil
 	}
 
@@ -108,4 +108,38 @@ func (c *Cache) DeleteMulti(ctx context.Context, keys []string) error {
 	}
 
 	return c.storage.Delete(ctx, keys...)
+}
+
+type key struct{ name string }
+
+var recomputeKey = key{"recompute"}
+
+// WithRecompute returns a context with recompute state.
+//
+// A recompute state bypasses cache reading to force updating the current cache state.
+// Use this to precompute values.
+func WithRecompute(ctx context.Context) context.Context {
+	return context.WithValue(ctx, recomputeKey, struct{}{})
+}
+
+// IsRecompute checks whether there is a recompute state.
+func IsRecompute(ctx context.Context) bool {
+	_, ok := ctx.Value(recomputeKey).(struct{})
+	return ok
+}
+
+var bypassKey = key{"bypass"}
+
+// WithBypass returns a context with bypass state.
+//
+// A bypass state bypasses both cache reading and writing.
+// Use this to skip the cache layer.
+func WithBypass(ctx context.Context) context.Context {
+	return context.WithValue(ctx, bypassKey, struct{}{})
+}
+
+// IsBypass checks whether there is a bypass state.
+func IsBypass(ctx context.Context) bool {
+	_, ok := ctx.Value(bypassKey).(struct{})
+	return ok
 }
