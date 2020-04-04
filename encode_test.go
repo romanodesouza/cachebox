@@ -18,9 +18,7 @@ func (*MsgPackEncoder) MarshalMsg(b []byte) ([]byte, error) {
 	return []byte("msgpack"), nil
 }
 
-var (
-	ErrMsgPackEncode = errors.New("msgpack encode error")
-)
+var ErrMsgPackEncode = errors.New("msgpack encode error")
 
 type MsgPackEncoderFailer struct{}
 

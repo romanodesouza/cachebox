@@ -6,24 +6,46 @@ package cachebox
 
 import (
 	"context"
-
-	"github.com/romanodesouza/cachebox/storage"
+	"time"
 )
 
 // Cache handles a cache storage.
 type Cache struct {
-	storage storage.Storage
+	storage    Storage
+	nsttl      time.Duration
+	recyclable bool
 }
 
 // NewCache returns a new Cache instance.
-func NewCache(storage storage.Storage, opts ...func(*Cache)) *Cache {
-	c := &Cache{storage: storage}
+func NewCache(storage Storage, opts ...func(*Cache)) *Cache {
+	c := &Cache{
+		storage:    storage,
+		nsttl:      12 * time.Hour,
+		recyclable: true,
+	}
 
 	for _, opt := range opts {
 		opt(c)
 	}
 
 	return c
+}
+
+// WithDefaultNamespaceTTL sets the ttl for namespace keys.
+//
+// Default is 12h.
+func WithDefaultNamespaceTTL(ttl time.Duration) func(*Cache) {
+	return func(c *Cache) { c.nsttl = ttl }
+}
+
+// WithKeyBasedExpiration enables key-based expiration based on namespace version.
+//
+// Given a key "cachekey" and a namespace "ns" of version "1", the versioned key would be "cachebox:v1:cachekey"
+// Once the namespace gets invalidated, the next formed key could be "cachebox:v2:cachekey" and so on.
+// Versioning is done using unix nano timestamps.
+// By default, this behaviour is disabled in favour of the recyclable keys strategy.
+func WithKeyBasedExpiration() func(*Cache) {
+	return func(c *Cache) { c.recyclable = false }
 }
 
 // Get performs a get call in the cache storage.
@@ -58,9 +80,6 @@ func (c *Cache) GetMulti(ctx context.Context, keys []string) ([][]byte, error) {
 	return bb, nil
 }
 
-// Item represents an item to get inserted in the cache storage.
-type Item storage.Item
-
 // Set performs a set call in the cache storage.
 //
 // In case of bypass, it returns nil to skip the call.
@@ -69,7 +88,7 @@ func (c *Cache) Set(ctx context.Context, item Item) error {
 		return nil
 	}
 
-	return c.storage.Set(ctx, storage.Item(item))
+	return c.storage.Set(ctx, item)
 }
 
 // SetMulti performs a set multi call in the cache storage.
@@ -80,12 +99,7 @@ func (c *Cache) SetMulti(ctx context.Context, items []Item) error {
 		return nil
 	}
 
-	sItems := make([]storage.Item, len(items))
-	for k, item := range items {
-		sItems[k] = storage.Item(item)
-	}
-
-	return c.storage.Set(ctx, sItems...)
+	return c.storage.Set(ctx, items...)
 }
 
 // Delete performs a delete call in the cache storage.
@@ -108,6 +122,11 @@ func (c *Cache) DeleteMulti(ctx context.Context, keys []string) error {
 	}
 
 	return c.storage.Delete(ctx, keys...)
+}
+
+// Namespace a new CacheNS instance to perform cache calls based on a namespace version.
+func (c *Cache) Namespace(keys ...string) *CacheNS {
+	return NewCacheNS(c, keys)
 }
 
 type key struct{ name string }

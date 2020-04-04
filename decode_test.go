@@ -19,9 +19,7 @@ func (m *MsgPackDecoder) UnmarshalMsg(b []byte) ([]byte, error) {
 	return b, nil
 }
 
-var (
-	ErrMsgPackDecode = errors.New("msgpack decode error")
-)
+var ErrMsgPackDecode = errors.New("msgpack decode error")
 
 type MsgPackDecoderFailer struct{}
 

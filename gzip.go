@@ -9,22 +9,20 @@ import (
 	"compress/gzip"
 	"context"
 	"io"
-
-	"github.com/romanodesouza/cachebox/storage"
 )
 
 // WithGzipCompression enables gzip compression of key values.
 func WithGzipCompression(level int) func(c *Cache) {
 	return func(c *Cache) {
-		c.storage = storage.NewHooksWrap(c.storage, storage.Hooks{
+		c.storage = NewStorageWrapper(c.storage, StorageHooks{
 			BeforeSet: gzipCompress(level),
 			AfterMGet: gzipUncompress(),
 		})
 	}
 }
 
-func gzipCompress(level int) func(context.Context, storage.Item) (storage.Item, error) {
-	return func(_ context.Context, item storage.Item) (storage.Item, error) {
+func gzipCompress(level int) func(context.Context, Item) (Item, error) {
+	return func(_ context.Context, item Item) (Item, error) {
 		if item.Value == nil {
 			return item, nil
 		}
@@ -48,8 +46,8 @@ func gzipUncompress() func(context.Context, string, []byte) ([]byte, error) {
 
 func gzipData(b []byte, level int) ([]byte, error) {
 	var buf bytes.Buffer
-	w, err := gzip.NewWriterLevel(&buf, level)
 
+	w, err := gzip.NewWriterLevel(&buf, level)
 	if err != nil {
 		return nil, err
 	}

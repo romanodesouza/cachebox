@@ -6,17 +6,19 @@ package storage
 
 import (
 	"context"
+
+	"github.com/romanodesouza/cachebox"
 )
 
-var _ Storage = (*MultiStorage)(nil)
+var _ cachebox.Storage = (*MultiStorage)(nil)
 
-// MultiStorage implements the Storage interface by wrapping a list of storages.
+// MultiStorage implements the cachebox.Storage interface by wrapping a list of storages.
 type MultiStorage struct {
-	storages []Storage
+	storages []cachebox.Storage
 }
 
 // NewMultiStorage returns a new MultiStorage instance.
-func NewMultiStorage(storages ...Storage) *MultiStorage {
+func NewMultiStorage(storages ...cachebox.Storage) *MultiStorage {
 	return &MultiStorage{storages: storages}
 }
 
@@ -53,8 +55,8 @@ func (m *MultiStorage) MGet(ctx context.Context, keys ...string) ([][]byte, erro
 
 	for i := 1; i < len(m.storages); i++ {
 		storage := m.storages[i]
-		res, err := storage.MGet(ctx, miss...)
 
+		res, err := storage.MGet(ctx, miss...)
 		if err != nil {
 			return nil, err
 		}
@@ -80,7 +82,7 @@ func (m *MultiStorage) MGet(ctx context.Context, keys ...string) ([][]byte, erro
 
 // Set performs a set call in all underlying cache storages.
 // Returns early an error whether any of them fail.
-func (m *MultiStorage) Set(ctx context.Context, items ...Item) error {
+func (m *MultiStorage) Set(ctx context.Context, items ...cachebox.Item) error {
 	for _, storage := range m.storages {
 		if err := storage.Set(ctx, items...); err != nil {
 			return err

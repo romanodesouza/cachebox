@@ -10,7 +10,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/romanodesouza/cachebox/mock/mock_storage"
+	"github.com/romanodesouza/cachebox"
+	"github.com/romanodesouza/cachebox/mock/mock_cachebox"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
@@ -31,9 +32,9 @@ func TestMultiStorage_MGet(t *testing.T) {
 			ctx:  context.Background(),
 			keys: []string{"key1", "key2"},
 			multistorage: func(ctrl *gomock.Controller) *storage.MultiStorage {
-				store1 := mock_storage.NewMockStorage(ctrl)
+				store1 := mock_cachebox.NewMockStorage(ctrl)
 				store1.EXPECT().MGet(gomock.Any(), gomock.Any()).Return([][]byte{[]byte("ok"), []byte("ok")}, nil)
-				store2 := mock_storage.NewMockStorage(ctrl)
+				store2 := mock_cachebox.NewMockStorage(ctrl)
 
 				return storage.NewMultiStorage(store1, store2)
 			},
@@ -45,9 +46,9 @@ func TestMultiStorage_MGet(t *testing.T) {
 			ctx:  context.Background(),
 			keys: []string{"key1", "key2"},
 			multistorage: func(ctrl *gomock.Controller) *storage.MultiStorage {
-				store1 := mock_storage.NewMockStorage(ctrl)
+				store1 := mock_cachebox.NewMockStorage(ctrl)
 				store1.EXPECT().MGet(gomock.Any(), gomock.Any()).Return(nil, errors.New("store1: mget error"))
-				store2 := mock_storage.NewMockStorage(ctrl)
+				store2 := mock_cachebox.NewMockStorage(ctrl)
 
 				return storage.NewMultiStorage(store1, store2)
 			},
@@ -59,9 +60,9 @@ func TestMultiStorage_MGet(t *testing.T) {
 			ctx:  context.Background(),
 			keys: []string{"key1", "key2"},
 			multistorage: func(ctrl *gomock.Controller) *storage.MultiStorage {
-				store1 := mock_storage.NewMockStorage(ctrl)
+				store1 := mock_cachebox.NewMockStorage(ctrl)
 				store1.EXPECT().MGet(gomock.Any(), "key1", "key2").Return([][]byte{[]byte("ok"), nil}, nil)
-				store2 := mock_storage.NewMockStorage(ctrl)
+				store2 := mock_cachebox.NewMockStorage(ctrl)
 				store2.EXPECT().MGet(gomock.Any(), "key2").Return([][]byte{[]byte("ok")}, nil)
 
 				return storage.NewMultiStorage(store1, store2)
@@ -74,9 +75,9 @@ func TestMultiStorage_MGet(t *testing.T) {
 			ctx:  context.Background(),
 			keys: []string{"key1", "key2"},
 			multistorage: func(ctrl *gomock.Controller) *storage.MultiStorage {
-				store1 := mock_storage.NewMockStorage(ctrl)
+				store1 := mock_cachebox.NewMockStorage(ctrl)
 				store1.EXPECT().MGet(gomock.Any(), "key1", "key2").Return([][]byte{[]byte("ok"), nil}, nil)
-				store2 := mock_storage.NewMockStorage(ctrl)
+				store2 := mock_cachebox.NewMockStorage(ctrl)
 				store2.EXPECT().MGet(gomock.Any(), "key2").Return([][]byte{nil}, nil)
 
 				return storage.NewMultiStorage(store1, store2)
@@ -110,19 +111,19 @@ func TestMultiStorage_Set(t *testing.T) {
 	tests := []struct {
 		name         string
 		ctx          context.Context
-		items        []storage.Item
+		items        []cachebox.Item
 		multistorage func(ctrl *gomock.Controller) *storage.MultiStorage
 		wantErr      error
 	}{
 		{
 			name:  "it should set in all storages",
 			ctx:   context.Background(),
-			items: []storage.Item{{Key: "key1"}, {Key: "key2"}},
+			items: []cachebox.Item{{Key: "key1"}, {Key: "key2"}},
 			multistorage: func(ctrl *gomock.Controller) *storage.MultiStorage {
-				store1 := mock_storage.NewMockStorage(ctrl)
-				store1.EXPECT().Set(gomock.Any(), storage.Item{Key: "key1"}, storage.Item{Key: "key2"}).Return(nil)
-				store2 := mock_storage.NewMockStorage(ctrl)
-				store2.EXPECT().Set(gomock.Any(), storage.Item{Key: "key1"}, storage.Item{Key: "key2"}).Return(nil)
+				store1 := mock_cachebox.NewMockStorage(ctrl)
+				store1.EXPECT().Set(gomock.Any(), cachebox.Item{Key: "key1"}, cachebox.Item{Key: "key2"}).Return(nil)
+				store2 := mock_cachebox.NewMockStorage(ctrl)
+				store2.EXPECT().Set(gomock.Any(), cachebox.Item{Key: "key1"}, cachebox.Item{Key: "key2"}).Return(nil)
 
 				return storage.NewMultiStorage(store1, store2)
 			},
@@ -131,11 +132,11 @@ func TestMultiStorage_Set(t *testing.T) {
 		{
 			name:  "it should return early in case of error",
 			ctx:   context.Background(),
-			items: []storage.Item{{Key: "key1"}, {Key: "key2"}},
+			items: []cachebox.Item{{Key: "key1"}, {Key: "key2"}},
 			multistorage: func(ctrl *gomock.Controller) *storage.MultiStorage {
-				store1 := mock_storage.NewMockStorage(ctrl)
+				store1 := mock_cachebox.NewMockStorage(ctrl)
 				store1.EXPECT().Set(gomock.Any(), gomock.Any()).Return(errors.New("store1: set error"))
-				store2 := mock_storage.NewMockStorage(ctrl)
+				store2 := mock_cachebox.NewMockStorage(ctrl)
 
 				return storage.NewMultiStorage(store1, store2)
 			},
@@ -172,9 +173,9 @@ func TestMultiStorage_Delete(t *testing.T) {
 			ctx:  context.Background(),
 			keys: []string{"key1", "key2"},
 			multistorage: func(ctrl *gomock.Controller) *storage.MultiStorage {
-				store1 := mock_storage.NewMockStorage(ctrl)
+				store1 := mock_cachebox.NewMockStorage(ctrl)
 				store1.EXPECT().Delete(gomock.Any(), "key1", "key2").Return(nil)
-				store2 := mock_storage.NewMockStorage(ctrl)
+				store2 := mock_cachebox.NewMockStorage(ctrl)
 				store2.EXPECT().Delete(gomock.Any(), "key1", "key2").Return(nil)
 
 				return storage.NewMultiStorage(store1, store2)
@@ -186,9 +187,9 @@ func TestMultiStorage_Delete(t *testing.T) {
 			ctx:  context.Background(),
 			keys: []string{"key1", "key2"},
 			multistorage: func(ctrl *gomock.Controller) *storage.MultiStorage {
-				store1 := mock_storage.NewMockStorage(ctrl)
+				store1 := mock_cachebox.NewMockStorage(ctrl)
 				store1.EXPECT().Delete(gomock.Any(), gomock.Any()).Return(errors.New("store1: delete error"))
-				store2 := mock_storage.NewMockStorage(ctrl)
+				store2 := mock_cachebox.NewMockStorage(ctrl)
 
 				return storage.NewMultiStorage(store1, store2)
 			},

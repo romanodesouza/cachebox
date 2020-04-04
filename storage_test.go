@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
-package storage_test
+package cachebox_test
 
 import (
 	"context"
@@ -13,25 +13,25 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
-	"github.com/romanodesouza/cachebox/mock/mock_storage"
-	"github.com/romanodesouza/cachebox/storage"
+	"github.com/romanodesouza/cachebox"
+	"github.com/romanodesouza/cachebox/mock/mock_cachebox"
 )
 
-func TestNewHooksWrap(t *testing.T) {
+func TestNewStorageWrapper(t *testing.T) {
 	t.Run("it should append hooks on same instance to reuse loops", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		store := mock_storage.NewMockStorage(ctrl)
+		store := mock_cachebox.NewMockStorage(ctrl)
 		store.EXPECT().MGet(gomock.Any(), gomock.Any()).Return([][]byte{[]byte("ok")}, nil)
 
-		wrap := storage.NewHooksWrap(store, storage.Hooks{
+		wrap := cachebox.NewStorageWrapper(store, cachebox.StorageHooks{
 			AfterMGet: func(ctx context.Context, key string, b []byte) ([]byte, error) {
 				return append(b, []byte("first")...), nil
 			},
 		})
 
-		wrap = storage.NewHooksWrap(wrap, storage.Hooks{
+		wrap = cachebox.NewStorageWrapper(wrap, cachebox.StorageHooks{
 			AfterMGet: func(ctx context.Context, key string, b []byte) ([]byte, error) {
 				return append(b, []byte("second")...), nil
 			},
@@ -47,23 +47,23 @@ func TestNewHooksWrap(t *testing.T) {
 	})
 }
 
-func TestHooksWrap_MGet(t *testing.T) {
+func TestNewStorageWrapper_MGet(t *testing.T) {
 	tests := []struct {
 		name    string
-		storage func(ctrl *gomock.Controller) storage.Storage
-		hooks   []storage.Hooks
+		storage func(ctrl *gomock.Controller) cachebox.Storage
+		hooks   []cachebox.StorageHooks
 		keys    []string
 		want    [][]byte
 		wantErr error
 	}{
 		{
 			name: "it should return early the storage error",
-			storage: func(ctrl *gomock.Controller) storage.Storage {
-				store := mock_storage.NewMockStorage(ctrl)
+			storage: func(ctrl *gomock.Controller) cachebox.Storage {
+				store := mock_cachebox.NewMockStorage(ctrl)
 				store.EXPECT().MGet(gomock.Any(), gomock.Any()).Return(nil, errors.New("storage: mget error"))
 				return store
 			},
-			hooks: []storage.Hooks{{
+			hooks: []cachebox.StorageHooks{{
 				AfterMGet: func(ctx context.Context, key string, b []byte) ([]byte, error) {
 					return b, nil
 				},
@@ -74,12 +74,12 @@ func TestHooksWrap_MGet(t *testing.T) {
 		},
 		{
 			name: "it should return hook error",
-			storage: func(ctrl *gomock.Controller) storage.Storage {
-				store := mock_storage.NewMockStorage(ctrl)
+			storage: func(ctrl *gomock.Controller) cachebox.Storage {
+				store := mock_cachebox.NewMockStorage(ctrl)
 				store.EXPECT().MGet(gomock.Any(), gomock.Any()).Return([][]byte{[]byte("ok"), []byte("ok")}, nil)
 				return store
 			},
-			hooks: []storage.Hooks{{
+			hooks: []cachebox.StorageHooks{{
 				AfterMGet: func(ctx context.Context, key string, b []byte) ([]byte, error) {
 					return nil, errors.New("hooks: after mget error")
 				},
@@ -90,8 +90,8 @@ func TestHooksWrap_MGet(t *testing.T) {
 		},
 		{
 			name: "it should transform the bytes after calling storage mget",
-			storage: func(ctrl *gomock.Controller) storage.Storage {
-				store := mock_storage.NewMockStorage(ctrl)
+			storage: func(ctrl *gomock.Controller) cachebox.Storage {
+				store := mock_cachebox.NewMockStorage(ctrl)
 				store.EXPECT().MGet(gomock.Any(), gomock.Any()).Return(
 					[][]byte{
 						[]byte("transform"),
@@ -101,7 +101,7 @@ func TestHooksWrap_MGet(t *testing.T) {
 				)
 				return store
 			},
-			hooks: []storage.Hooks{{
+			hooks: []cachebox.StorageHooks{{
 				AfterMGet: func(ctx context.Context, key string, b []byte) ([]byte, error) {
 					return append(b, []byte(" transformed")...), nil
 				},
@@ -115,8 +115,8 @@ func TestHooksWrap_MGet(t *testing.T) {
 		},
 		{
 			name: "it should run all after mget hooks in sequence",
-			storage: func(ctrl *gomock.Controller) storage.Storage {
-				store := mock_storage.NewMockStorage(ctrl)
+			storage: func(ctrl *gomock.Controller) cachebox.Storage {
+				store := mock_cachebox.NewMockStorage(ctrl)
 				store.EXPECT().MGet(gomock.Any(), gomock.Any()).Return(
 					[][]byte{
 						[]byte("transform"),
@@ -126,7 +126,7 @@ func TestHooksWrap_MGet(t *testing.T) {
 				)
 				return store
 			},
-			hooks: []storage.Hooks{
+			hooks: []cachebox.StorageHooks{
 				{
 					AfterMGet: func(ctx context.Context, key string, b []byte) ([]byte, error) {
 						return append(b, []byte("1")...), nil
@@ -154,7 +154,7 @@ func TestHooksWrap_MGet(t *testing.T) {
 			defer ctrl.Finish()
 
 			ctx := context.Background()
-			wrap := storage.NewHooksWrap(tt.storage(ctrl), tt.hooks...)
+			wrap := cachebox.NewStorageWrapper(tt.storage(ctrl), tt.hooks...)
 			bb, err := wrap.MGet(ctx, tt.keys...)
 
 			if diff := cmp.Diff(tt.want, bb); diff != "" {
@@ -168,23 +168,23 @@ func TestHooksWrap_MGet(t *testing.T) {
 	}
 }
 
-func TestHooksWrap_Set(t *testing.T) {
+func TestStorageWrapper_Set(t *testing.T) {
 	tests := []struct {
 		name    string
-		storage func(ctrl *gomock.Controller) storage.Storage
-		hooks   []storage.Hooks
-		items   []storage.Item
+		storage func(ctrl *gomock.Controller) cachebox.Storage
+		hooks   []cachebox.StorageHooks
+		items   []cachebox.Item
 		wantErr error
 	}{
 		{
 			name: "it should return early the storage error",
-			storage: func(ctrl *gomock.Controller) storage.Storage {
-				store := mock_storage.NewMockStorage(ctrl)
+			storage: func(ctrl *gomock.Controller) cachebox.Storage {
+				store := mock_cachebox.NewMockStorage(ctrl)
 				store.EXPECT().Set(gomock.Any(), gomock.Any()).Return(errors.New("storage: set error"))
 				return store
 			},
-			hooks: []storage.Hooks{{
-				BeforeSet: func(ctx context.Context, item storage.Item) (storage.Item, error) {
+			hooks: []cachebox.StorageHooks{{
+				BeforeSet: func(ctx context.Context, item cachebox.Item) (cachebox.Item, error) {
 					return item, nil
 				},
 			}},
@@ -192,16 +192,16 @@ func TestHooksWrap_Set(t *testing.T) {
 		},
 		{
 			name: "it should return hook error",
-			storage: func(ctrl *gomock.Controller) storage.Storage {
-				store := mock_storage.NewMockStorage(ctrl)
+			storage: func(ctrl *gomock.Controller) cachebox.Storage {
+				store := mock_cachebox.NewMockStorage(ctrl)
 				return store
 			},
-			hooks: []storage.Hooks{{
-				BeforeSet: func(ctx context.Context, item storage.Item) (storage.Item, error) {
+			hooks: []cachebox.StorageHooks{{
+				BeforeSet: func(ctx context.Context, item cachebox.Item) (cachebox.Item, error) {
 					return item, errors.New("hooks: before set error")
 				},
 			}},
-			items: []storage.Item{
+			items: []cachebox.Item{
 				{
 					Key:   "key1",
 					Value: []byte("ok"),
@@ -217,9 +217,9 @@ func TestHooksWrap_Set(t *testing.T) {
 		},
 		{
 			name: "it should transform the bytes before calling storage set",
-			storage: func(ctrl *gomock.Controller) storage.Storage {
-				store := mock_storage.NewMockStorage(ctrl)
-				store.EXPECT().Set(gomock.Any(), []storage.Item{
+			storage: func(ctrl *gomock.Controller) cachebox.Storage {
+				store := mock_cachebox.NewMockStorage(ctrl)
+				store.EXPECT().Set(gomock.Any(), []cachebox.Item{
 					{
 						Key:   "key1",
 						Value: []byte("transform transformed"),
@@ -233,13 +233,13 @@ func TestHooksWrap_Set(t *testing.T) {
 				}).Return(nil)
 				return store
 			},
-			hooks: []storage.Hooks{{
-				BeforeSet: func(ctx context.Context, item storage.Item) (storage.Item, error) {
+			hooks: []cachebox.StorageHooks{{
+				BeforeSet: func(ctx context.Context, item cachebox.Item) (cachebox.Item, error) {
 					item.Value = append(item.Value, []byte(" transformed")...)
 					return item, nil
 				},
 			}},
-			items: []storage.Item{
+			items: []cachebox.Item{
 				{
 					Key:   "key1",
 					Value: []byte("transform"),
@@ -255,9 +255,9 @@ func TestHooksWrap_Set(t *testing.T) {
 		},
 		{
 			name: "it should run all before set hooks in sequence",
-			storage: func(ctrl *gomock.Controller) storage.Storage {
-				store := mock_storage.NewMockStorage(ctrl)
-				store.EXPECT().Set(gomock.Any(), []storage.Item{
+			storage: func(ctrl *gomock.Controller) cachebox.Storage {
+				store := mock_cachebox.NewMockStorage(ctrl)
+				store.EXPECT().Set(gomock.Any(), []cachebox.Item{
 					{
 						Key:   "key1",
 						Value: []byte("transform12"),
@@ -271,21 +271,21 @@ func TestHooksWrap_Set(t *testing.T) {
 				}).Return(nil)
 				return store
 			},
-			hooks: []storage.Hooks{
+			hooks: []cachebox.StorageHooks{
 				{
-					BeforeSet: func(ctx context.Context, item storage.Item) (storage.Item, error) {
+					BeforeSet: func(ctx context.Context, item cachebox.Item) (cachebox.Item, error) {
 						item.Value = append(item.Value, []byte("1")...)
 						return item, nil
 					},
 				},
 				{
-					BeforeSet: func(ctx context.Context, item storage.Item) (storage.Item, error) {
+					BeforeSet: func(ctx context.Context, item cachebox.Item) (cachebox.Item, error) {
 						item.Value = append(item.Value, []byte("2")...)
 						return item, nil
 					},
 				},
 			},
-			items: []storage.Item{
+			items: []cachebox.Item{
 				{
 					Key:   "key1",
 					Value: []byte("transform"),
@@ -308,7 +308,7 @@ func TestHooksWrap_Set(t *testing.T) {
 			defer ctrl.Finish()
 
 			ctx := context.Background()
-			wrap := storage.NewHooksWrap(tt.storage(ctrl), tt.hooks...)
+			wrap := cachebox.NewStorageWrapper(tt.storage(ctrl), tt.hooks...)
 			err := wrap.Set(ctx, tt.items...)
 
 			if fmt.Sprintf("%v", err) != fmt.Sprintf("%v", tt.wantErr) {

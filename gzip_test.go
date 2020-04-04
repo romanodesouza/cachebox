@@ -17,8 +17,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
 	"github.com/romanodesouza/cachebox"
-	"github.com/romanodesouza/cachebox/mock/mock_storage"
-	"github.com/romanodesouza/cachebox/storage"
+	"github.com/romanodesouza/cachebox/mock/mock_cachebox"
 )
 
 func TestGzipData(t *testing.T) {
@@ -132,7 +131,7 @@ func TestCache_WithGzipCompression(t *testing.T) {
 				keys: []string{"key1"},
 				cache: func(ctrl *gomock.Controller) *cachebox.Cache {
 					value := []byte("not gzipped yet")
-					store := mock_storage.NewMockStorage(ctrl)
+					store := mock_cachebox.NewMockStorage(ctrl)
 					store.EXPECT().MGet(gomock.Any(), gomock.Any()).Return([][]byte{value}, nil)
 
 					return cachebox.NewCache(store, cachebox.WithGzipCompression(gzip.DefaultCompression))
@@ -147,7 +146,7 @@ func TestCache_WithGzipCompression(t *testing.T) {
 				cache: func(ctrl *gomock.Controller) *cachebox.Cache {
 					value := []byte("gzipped now")
 					gzipped, _ := cachebox.GzipData(value, gzip.DefaultCompression)
-					store := mock_storage.NewMockStorage(ctrl)
+					store := mock_cachebox.NewMockStorage(ctrl)
 					store.EXPECT().MGet(gomock.Any(), gomock.Any()).Return([][]byte{gzipped}, nil)
 
 					return cachebox.NewCache(store, cachebox.WithGzipCompression(gzip.DefaultCompression))
@@ -160,7 +159,7 @@ func TestCache_WithGzipCompression(t *testing.T) {
 				ctx:  context.Background(),
 				keys: []string{"key1"},
 				cache: func(ctrl *gomock.Controller) *cachebox.Cache {
-					store := mock_storage.NewMockStorage(ctrl)
+					store := mock_cachebox.NewMockStorage(ctrl)
 					store.EXPECT().MGet(gomock.Any(), gomock.Any()).Return([][]byte{nil}, nil)
 
 					return cachebox.NewCache(store, cachebox.WithGzipCompression(gzip.DefaultCompression))
@@ -204,8 +203,8 @@ func TestCache_WithGzipCompression(t *testing.T) {
 				cache: func(ctrl *gomock.Controller) *cachebox.Cache {
 					value := []byte("repeat repeat")
 					gzipped, _ := cachebox.GzipData(value, gzip.DefaultCompression)
-					store := mock_storage.NewMockStorage(ctrl)
-					store.EXPECT().Set(gomock.Any(), storage.Item{
+					store := mock_cachebox.NewMockStorage(ctrl)
+					store.EXPECT().Set(gomock.Any(), cachebox.Item{
 						Key:   "key1",
 						Value: gzipped,
 						TTL:   time.Minute,
@@ -224,8 +223,8 @@ func TestCache_WithGzipCompression(t *testing.T) {
 				name: "it should not gzip nil value",
 				ctx:  context.Background(),
 				cache: func(ctrl *gomock.Controller) *cachebox.Cache {
-					store := mock_storage.NewMockStorage(ctrl)
-					store.EXPECT().Set(gomock.Any(), storage.Item{
+					store := mock_cachebox.NewMockStorage(ctrl)
+					store.EXPECT().Set(gomock.Any(), cachebox.Item{
 						Key:   "key1",
 						Value: nil,
 						TTL:   time.Minute,

@@ -7,86 +7,150 @@ package cachebox
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	"time"
-
-	"github.com/romanodesouza/cachebox/storage"
 )
 
 //nolint:golint
 var Now = func() time.Time { return time.Now().UTC() }
 
-// CacheNS handles a namespace storage.
-//
-// Default ttl of keys is 24h.
+// CacheNS handles namespaced cache calls.
 type CacheNS struct {
-	storage storage.NamespaceStorage
-	ttl     time.Duration
+	cache     *Cache
+	nskeys    []string
+	nsversion int64
 }
 
 // NewCacheNS returns a new CacheNS instance.
-func NewCacheNS(storage storage.NamespaceStorage, opts ...func(*CacheNS)) *CacheNS {
-	cachens := &CacheNS{
-		storage: storage,
-		ttl:     24 * time.Hour,
+func NewCacheNS(c *Cache, nskeys []string) *CacheNS {
+	return &CacheNS{
+		cache:  c,
+		nskeys: nskeys,
 	}
-
-	for _, opt := range opts {
-		opt(cachens)
-	}
-
-	return cachens
 }
 
-// WithNamespaceKeyTTL sets the ttl for namespace keys.
+// Get performs a get call in the cache storage, checking the namespace version.
 //
-// Default is 24h.
-func WithNamespaceKeyTTL(ttl time.Duration) func(*CacheNS) {
-	return func(c *CacheNS) { c.ttl = ttl }
-}
+// In case of recompute or bypass, it returns (nil, nil) to fake a miss and skip the call.
+func (c *CacheNS) Get(ctx context.Context, key string) ([]byte, error) {
+	var b []byte
 
-// GetMostRecentTimestamp returns the most recent timestamp amongst the given keys.
-//
-// To avoid clashing on invalidations at the same time, it uses nano precision.
-// In case of bypass, it returns the current clock time and nil to skip the call.
-func (c *CacheNS) GetMostRecentTimestamp(ctx context.Context, keys ...string) (int64, error) {
-	// Cached now to avoid unnecessary syscalls
-	var now time.Time
+	if c.nsversion == 0 {
+		keys := c.nskeys
 
-	getNow := func() time.Time {
-		if now.IsZero() {
-			now = Now()
+		// Execute a single MGet on recyclable strategy
+		if c.cache.recyclable {
+			keys = append(keys, buildRecyclableKey(key))
 		}
 
-		return now
+		bb, err := c.cache.storage.MGet(ctx, keys...)
+		if err != nil {
+			return nil, err
+		}
+
+		ts, err := c.mostRecentTimestamp(ctx, c.nskeys, bb)
+		if err != nil {
+			return nil, err
+		}
+
+		c.nsversion = ts
+
+		// Execute an extra MGet on key-based expiration strategy
+		if !c.cache.recyclable {
+			bb, err = c.cache.storage.MGet(ctx, buildVersionedKey(key, c.nsversion))
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		b = bb[len(bb)-1]
+	} else {
+		if c.cache.recyclable {
+			key = buildRecyclableKey(key)
+		} else {
+			key = buildVersionedKey(key, c.nsversion)
+		}
+
+		bb, err := c.cache.storage.MGet(ctx, key)
+		if err != nil {
+			return nil, err
+		}
+
+		b = bb[0]
 	}
 
+	if IsRecompute(ctx) || IsBypass(ctx) {
+		return nil, nil
+	}
+
+	// Miss
+	if b == nil {
+		return nil, nil
+	}
+
+	if c.cache.recyclable {
+		var version int64
+		version, b = splitVersion(b)
+
+		// Miss
+		if c.nsversion > version {
+			return nil, nil
+		}
+	}
+
+	// Hit
+	return b, nil
+}
+
+// Set performs a set call in the cache storage, handling the namespace version.
+//
+// In case of bypass, it returns nil to skip the call.
+func (c *CacheNS) Set(ctx context.Context, item Item) error {
 	if IsBypass(ctx) {
-		return getNow().UnixNano(), nil
+		return nil
 	}
 
-	bb, err := c.storage.MGet(ctx, keys...)
-	if err != nil {
-		return getNow().UnixNano(), err
+	if c.nsversion == 0 {
+		bb, err := c.cache.storage.MGet(ctx, c.nskeys...)
+		if err != nil {
+			return err
+		}
+
+		ts, err := c.mostRecentTimestamp(ctx, c.nskeys, bb)
+		if err != nil {
+			return err
+		}
+
+		c.nsversion = ts
 	}
 
-	var (
-		mostRecentTimestamp int64 = 0
-		setItems            []storage.Item
-	)
+	if c.cache.recyclable {
+		item.Key = buildRecyclableKey(item.Key)
+		item.Value = append(marshalInt64(c.nsversion), item.Value...)
+	} else {
+		item.Key = buildVersionedKey(item.Key, c.nsversion)
+	}
 
-	for i, b := range bb {
+	return c.cache.storage.Set(ctx, item)
+}
+
+func (c *CacheNS) mostRecentTimestamp(ctx context.Context, keys []string, bb [][]byte) (int64, error) {
+	var mostRecentTimestamp int64
+	var items []Item
+
+	for i, key := range keys {
 		var timestamp int64
 
-		if b == nil {
-			timestamp = getNow().UnixNano()
+		if bb[i] == nil {
+			timestamp = Now().UnixNano()
 
-			setItems = append(setItems, storage.Item{
-				Key:   keys[i],
+			items = append(items, Item{
+				Key:   key,
 				Value: marshalInt64(timestamp),
-				TTL:   c.ttl,
+				TTL:   c.cache.nsttl,
 			})
 		} else {
-			timestamp = unmarshalInt64(b)
+			timestamp = unmarshalInt64(bb[i])
 		}
 
 		if timestamp > mostRecentTimestamp {
@@ -94,35 +158,26 @@ func (c *CacheNS) GetMostRecentTimestamp(ctx context.Context, keys ...string) (i
 		}
 	}
 
-	if len(setItems) > 0 {
-		if err := c.storage.Set(ctx, setItems...); err != nil {
-			return getNow().UnixNano(), err
+	if len(items) > 0 {
+		if err := c.cache.storage.Set(ctx, items...); err != nil {
+			return -1, err
 		}
 	}
 
 	return mostRecentTimestamp, nil
 }
 
-// Delete performs a delete call in the cache storage.
-//
-// In case of bypass, it returns nil to skip the call.
-func (c *CacheNS) Delete(ctx context.Context, key string) error {
-	if IsBypass(ctx) {
-		return nil
-	}
-
-	return c.storage.Delete(ctx, key)
+func buildRecyclableKey(key string) string {
+	return fmt.Sprintf("cachebox:rk:%s", key)
 }
 
-// DeleteMulti performs a delete multi call in the cache storage.
-//
-// In case of bypass, it returns nil to skip the call.
-func (c *CacheNS) DeleteMulti(ctx context.Context, keys []string) error {
-	if IsBypass(ctx) {
-		return nil
-	}
+func buildVersionedKey(key string, version int64) string {
+	return fmt.Sprintf("cachebox:v%d:%s", version, key)
+}
 
-	return c.storage.Delete(ctx, keys...)
+func splitVersion(b []byte) (int64, []byte) {
+	version := unmarshalInt64(b[:8])
+	return version, b[8:]
 }
 
 func marshalInt64(i int64) []byte {

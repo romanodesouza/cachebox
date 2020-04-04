@@ -26,6 +26,7 @@ linters:
     - stylecheck
     - gomnd
     - dupl
+    - funlen
   fast: false
 
 linters-settings:
@@ -35,8 +36,8 @@ linters-settings:
     line-length: 120
     # tab width in spaces. Default to 1.
     tab-width: 1
-  funlen:
-    lines: 200
+  wsl:
+    allow-cuddle-declarations: 1
 
 issues:
   exclude-use-default: false

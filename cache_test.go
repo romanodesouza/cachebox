@@ -11,8 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/romanodesouza/cachebox/mock/mock_storage"
-	"github.com/romanodesouza/cachebox/storage"
+	"github.com/romanodesouza/cachebox/mock/mock_cachebox"
 
 	"github.com/golang/mock/gomock"
 	"github.com/google/go-cmp/cmp"
@@ -53,20 +52,20 @@ func TestCache_Get(t *testing.T) {
 			ctx:  context.Background(),
 			key:  "key",
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
-				store := mock_storage.NewMockStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), "key").Return(nil, errors.New("storage: get error"))
+				store := mock_cachebox.NewMockStorage(ctrl)
+				store.EXPECT().MGet(gomock.Any(), "key").Return(nil, errors.New("storage: mget error"))
 
 				return cachebox.NewCache(store)
 			},
 			want:    nil,
-			wantErr: errors.New("storage: get error"),
+			wantErr: errors.New("storage: mget error"),
 		},
 		{
 			name: "it should return the storage bytes when it succeeds",
 			ctx:  context.Background(),
 			key:  "key",
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
-				store := mock_storage.NewMockStorage(ctrl)
+				store := mock_cachebox.NewMockStorage(ctrl)
 				store.EXPECT().MGet(gomock.Any(), "key").Return([][]byte{[]byte("ok")}, nil)
 
 				return cachebox.NewCache(store)
@@ -130,7 +129,7 @@ func TestCache_GetMulti(t *testing.T) {
 			ctx:  context.Background(),
 			keys: []string{"key1", "key2"},
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
-				store := mock_storage.NewMockStorage(ctrl)
+				store := mock_cachebox.NewMockStorage(ctrl)
 				store.EXPECT().MGet(gomock.Any(), []string{"key1", "key2"}).
 					Return(nil, errors.New("storage: get multi error"))
 
@@ -144,7 +143,7 @@ func TestCache_GetMulti(t *testing.T) {
 			ctx:  context.Background(),
 			keys: []string{"key1", "key2"},
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
-				store := mock_storage.NewMockStorage(ctrl)
+				store := mock_cachebox.NewMockStorage(ctrl)
 				store.EXPECT().MGet(gomock.Any(), []string{"key1", "key2"}).
 					Return([][]byte{[]byte("ok"), []byte("ok")}, nil)
 
@@ -205,8 +204,8 @@ func TestCache_Set(t *testing.T) {
 				TTL:   time.Minute,
 			},
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
-				store := mock_storage.NewMockStorage(ctrl)
-				store.EXPECT().Set(gomock.Any(), storage.Item{
+				store := mock_cachebox.NewMockStorage(ctrl)
+				store.EXPECT().Set(gomock.Any(), cachebox.Item{
 					Key:   "key",
 					Value: []byte("ok"),
 					TTL:   time.Minute,
@@ -225,8 +224,8 @@ func TestCache_Set(t *testing.T) {
 				TTL:   time.Minute,
 			},
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
-				store := mock_storage.NewMockStorage(ctrl)
-				store.EXPECT().Set(gomock.Any(), storage.Item{
+				store := mock_cachebox.NewMockStorage(ctrl)
+				store.EXPECT().Set(gomock.Any(), cachebox.Item{
 					Key:   "key",
 					Value: []byte("ok"),
 					TTL:   time.Minute,
@@ -298,8 +297,8 @@ func TestCache_SetMulti(t *testing.T) {
 				},
 			},
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
-				store := mock_storage.NewMockStorage(ctrl)
-				store.EXPECT().Set(gomock.Any(), []storage.Item{
+				store := mock_cachebox.NewMockStorage(ctrl)
+				store.EXPECT().Set(gomock.Any(), []cachebox.Item{
 					{
 						Key:   "key1",
 						Value: []byte("ok"),
@@ -332,8 +331,8 @@ func TestCache_SetMulti(t *testing.T) {
 				},
 			},
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
-				store := mock_storage.NewMockStorage(ctrl)
-				store.EXPECT().Set(gomock.Any(), []storage.Item{
+				store := mock_cachebox.NewMockStorage(ctrl)
+				store.EXPECT().Set(gomock.Any(), []cachebox.Item{
 					{
 						Key:   "key1",
 						Value: []byte("ok"),
@@ -390,7 +389,7 @@ func TestCache_Delete(t *testing.T) {
 			ctx:  context.Background(),
 			key:  "key",
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
-				store := mock_storage.NewMockStorage(ctrl)
+				store := mock_cachebox.NewMockStorage(ctrl)
 				store.EXPECT().Delete(gomock.Any(), "key").Return(errors.New("storage: delete error"))
 
 				return cachebox.NewCache(store)
@@ -402,7 +401,7 @@ func TestCache_Delete(t *testing.T) {
 			ctx:  context.Background(),
 			key:  "key",
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
-				store := mock_storage.NewMockStorage(ctrl)
+				store := mock_cachebox.NewMockStorage(ctrl)
 				store.EXPECT().Delete(gomock.Any(), "key").Return(nil)
 
 				return cachebox.NewCache(store)
@@ -449,7 +448,7 @@ func TestCache_DeleteMulti(t *testing.T) {
 			ctx:  context.Background(),
 			keys: []string{"key1", "key2"},
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
-				store := mock_storage.NewMockStorage(ctrl)
+				store := mock_cachebox.NewMockStorage(ctrl)
 				store.EXPECT().Delete(gomock.Any(), "key1", "key2").Return(errors.New("storage: delete error"))
 
 				return cachebox.NewCache(store)
@@ -461,7 +460,7 @@ func TestCache_DeleteMulti(t *testing.T) {
 			ctx:  context.Background(),
 			keys: []string{"key1", "key2"},
 			cache: func(ctrl *gomock.Controller) *cachebox.Cache {
-				store := mock_storage.NewMockStorage(ctrl)
+				store := mock_cachebox.NewMockStorage(ctrl)
 				store.EXPECT().Delete(gomock.Any(), "key1", "key2").Return(nil)
 
 				return cachebox.NewCache(store)
