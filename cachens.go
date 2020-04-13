@@ -79,7 +79,7 @@ func (c *CacheNS) Get(ctx context.Context, key string) ([]byte, error) {
 		b = bb[0]
 	}
 
-	if IsRecompute(ctx) || IsBypass(ctx) {
+	if bpc := bypassFromContext(ctx); bpc == BypassReading || bpc == BypassReadWriting {
 		return nil, nil
 	}
 
@@ -106,7 +106,7 @@ func (c *CacheNS) Get(ctx context.Context, key string) ([]byte, error) {
 //
 // In case of bypass, it returns nil to skip the call.
 func (c *CacheNS) Set(ctx context.Context, item Item) error {
-	if IsBypass(ctx) {
+	if bypassFromContext(ctx) == BypassReadWriting {
 		return nil
 	}
 

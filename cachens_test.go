@@ -105,7 +105,7 @@ func TestCacheNS_Get(t *testing.T) {
 		},
 		{
 			name: "it should force a miss in case of bypass, after setting the namespace version",
-			ctx:  cachebox.WithBypass(context.Background()),
+			ctx:  cachebox.WithBypass(context.Background(), cachebox.BypassReadWriting),
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_cachebox.NewMockStorage(ctrl)
 				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:rk:key").
@@ -125,7 +125,7 @@ func TestCacheNS_Get(t *testing.T) {
 		},
 		{
 			name: "it should force a miss in case of recompute, after setting the namespace version",
-			ctx:  cachebox.WithRecompute(context.Background()),
+			ctx:  cachebox.WithBypass(context.Background(), cachebox.BypassReading),
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_cachebox.NewMockStorage(ctrl)
 				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:rk:key").
@@ -384,7 +384,7 @@ func TestCacheNS_Set(t *testing.T) {
 	}{
 		{
 			name: "it should skip the call when bypassing",
-			ctx:  cachebox.WithBypass(context.Background()),
+			ctx:  cachebox.WithBypass(context.Background(), cachebox.BypassReadWriting),
 			item: cachebox.Item{
 				Key:   "key",
 				Value: []byte("ok"),

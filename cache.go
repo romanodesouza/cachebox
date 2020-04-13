@@ -52,7 +52,7 @@ func WithKeyBasedExpiration() func(*Cache) {
 //
 // In case of recompute or bypass, it returns (nil, nil) to fake a miss and skip the call.
 func (c *Cache) Get(ctx context.Context, key string) ([]byte, error) {
-	if IsRecompute(ctx) || IsBypass(ctx) {
+	if bpc := bypassFromContext(ctx); bpc == BypassReading || bpc == BypassReadWriting {
 		return nil, nil
 	}
 
@@ -68,7 +68,7 @@ func (c *Cache) Get(ctx context.Context, key string) ([]byte, error) {
 //
 // In case of recompute or bypass, it returns (nil, nil) to fake a miss and skip the call.
 func (c *Cache) GetMulti(ctx context.Context, keys []string) ([][]byte, error) {
-	if IsRecompute(ctx) || IsBypass(ctx) {
+	if bpc := bypassFromContext(ctx); bpc == BypassReading || bpc == BypassReadWriting {
 		return nil, nil
 	}
 
@@ -84,7 +84,7 @@ func (c *Cache) GetMulti(ctx context.Context, keys []string) ([][]byte, error) {
 //
 // In case of bypass, it returns nil to skip the call.
 func (c *Cache) Set(ctx context.Context, item Item) error {
-	if IsBypass(ctx) {
+	if bypassFromContext(ctx) == BypassReadWriting {
 		return nil
 	}
 
@@ -95,7 +95,7 @@ func (c *Cache) Set(ctx context.Context, item Item) error {
 //
 // In case of bypass, it returns nil to skip the call.
 func (c *Cache) SetMulti(ctx context.Context, items []Item) error {
-	if IsBypass(ctx) {
+	if bypassFromContext(ctx) == BypassReadWriting {
 		return nil
 	}
 
@@ -106,7 +106,7 @@ func (c *Cache) SetMulti(ctx context.Context, items []Item) error {
 //
 // In case of bypass, it returns nil to skip the call.
 func (c *Cache) Delete(ctx context.Context, key string) error {
-	if IsBypass(ctx) {
+	if bypassFromContext(ctx) == BypassReadWriting {
 		return nil
 	}
 
@@ -117,7 +117,7 @@ func (c *Cache) Delete(ctx context.Context, key string) error {
 //
 // In case of bypass, it returns nil to skip the call.
 func (c *Cache) DeleteMulti(ctx context.Context, keys []string) error {
-	if IsBypass(ctx) {
+	if bypassFromContext(ctx) == BypassReadWriting {
 		return nil
 	}
 
@@ -127,38 +127,4 @@ func (c *Cache) DeleteMulti(ctx context.Context, keys []string) error {
 // Namespace a new CacheNS instance to perform cache calls based on a namespace version.
 func (c *Cache) Namespace(keys ...string) *CacheNS {
 	return NewCacheNS(c, keys)
-}
-
-type key struct{ name string }
-
-var recomputeKey = key{"recompute"}
-
-// WithRecompute returns a context with recompute state.
-//
-// A recompute state bypasses cache reading to force updating the current cache state.
-// Use this to precompute values.
-func WithRecompute(ctx context.Context) context.Context {
-	return context.WithValue(ctx, recomputeKey, struct{}{})
-}
-
-// IsRecompute checks whether there is a recompute state.
-func IsRecompute(ctx context.Context) bool {
-	_, ok := ctx.Value(recomputeKey).(struct{})
-	return ok
-}
-
-var bypassKey = key{"bypass"}
-
-// WithBypass returns a context with bypass state.
-//
-// A bypass state bypasses both cache reading and writing.
-// Use this to skip the cache layer.
-func WithBypass(ctx context.Context) context.Context {
-	return context.WithValue(ctx, bypassKey, struct{}{})
-}
-
-// IsBypass checks whether there is a bypass state.
-func IsBypass(ctx context.Context) bool {
-	_, ok := ctx.Value(bypassKey).(struct{})
-	return ok
 }
