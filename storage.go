@@ -2,7 +2,6 @@
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
 
-//nolint: lll
 //go:generate mockgen -destination mock/mock_cachebox/mock_storage.go github.com/romanodesouza/cachebox Storage
 
 package cachebox
@@ -30,6 +29,7 @@ type Item struct {
 type StorageHooks struct {
 	AfterMGet func(ctx context.Context, key string, b []byte) ([]byte, error)
 	BeforeSet func(ctx context.Context, item Item) (Item, error)
+	AfterSet  func(ctx context.Context, item Item) error
 }
 
 // StorageWrapper holds a storage interface, wrapping hooks over it.
@@ -38,6 +38,7 @@ type StorageWrapper struct {
 
 	afterMGet []func(ctx context.Context, key string, b []byte) ([]byte, error)
 	beforeSet []func(ctx context.Context, item Item) (Item, error)
+	afterSet  []func(ctx context.Context, item Item) error
 }
 
 // NewStorageWrapper returns a new StorageWrapper instance.
@@ -57,6 +58,10 @@ func NewStorageWrapper(storage Storage, hooks ...StorageHooks) *StorageWrapper {
 
 		if h.BeforeSet != nil {
 			w.beforeSet = append(w.beforeSet, h.BeforeSet)
+		}
+
+		if h.AfterSet != nil {
+			w.afterSet = append(w.afterSet, h.AfterSet)
 		}
 	}
 
@@ -101,5 +106,20 @@ func (w *StorageWrapper) Set(ctx context.Context, items ...Item) error {
 		}
 	}
 
-	return w.Storage.Set(ctx, items...)
+	err := w.Storage.Set(ctx, items...)
+	if err != nil {
+		return err
+	}
+
+	if len(w.afterSet) > 0 {
+		for i := range items {
+			for _, hook := range w.afterSet {
+				if err := hook(ctx, items[i]); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
 }
