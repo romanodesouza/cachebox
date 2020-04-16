@@ -33,7 +33,7 @@ func TestCacheNS_Get(t *testing.T) {
 			key:  "key",
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_cachebox.NewMockStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:rk:key").
+				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:recyc:key").
 					Return(nil, errors.New("storage: mget error"))
 
 				cache := cachebox.NewCache(store)
@@ -48,7 +48,7 @@ func TestCacheNS_Get(t *testing.T) {
 			ctx:  context.Background(),
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_cachebox.NewMockStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:rk:key").
+				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:recyc:key").
 					Return([][]byte{
 						marshalInt64(1577840451000000001),
 						marshalInt64(1577840461000000001),
@@ -68,7 +68,7 @@ func TestCacheNS_Get(t *testing.T) {
 			ctx:  context.Background(),
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_cachebox.NewMockStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:rk:key").
+				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:recyc:key").
 					Return([][]byte{
 						marshalInt64(1577840451000000001),
 						marshalInt64(1577840461000000001),
@@ -88,7 +88,7 @@ func TestCacheNS_Get(t *testing.T) {
 			ctx:  context.Background(),
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_cachebox.NewMockStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:rk:key").
+				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:recyc:key").
 					Return([][]byte{
 						marshalInt64(1577840451000000001),
 						marshalInt64(1577840461000000001),
@@ -108,7 +108,7 @@ func TestCacheNS_Get(t *testing.T) {
 			ctx:  cachebox.WithBypass(context.Background(), cachebox.BypassReadWriting),
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_cachebox.NewMockStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:rk:key").
+				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:recyc:key").
 					Return([][]byte{
 						marshalInt64(1577840451000000001),
 						marshalInt64(1577840461000000001),
@@ -128,7 +128,7 @@ func TestCacheNS_Get(t *testing.T) {
 			ctx:  cachebox.WithBypass(context.Background(), cachebox.BypassReading),
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_cachebox.NewMockStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:rk:key").
+				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:recyc:key").
 					Return([][]byte{
 						marshalInt64(1577840451000000001),
 						marshalInt64(1577840461000000001),
@@ -149,7 +149,7 @@ func TestCacheNS_Get(t *testing.T) {
 			key:  "key",
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_cachebox.NewMockStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:rk:key").
+				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:recyc:key").
 					Return([][]byte{
 						marshalInt64(1577840451000000001),
 						nil,
@@ -176,7 +176,7 @@ func TestCacheNS_Get(t *testing.T) {
 			key:  "key",
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_cachebox.NewMockStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:rk:key").
+				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:recyc:key").
 					Return([][]byte{
 						marshalInt64(1577840451000000001),
 						nil,
@@ -203,7 +203,7 @@ func TestCacheNS_Get(t *testing.T) {
 			key:  "key",
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_cachebox.NewMockStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:rk:key").
+				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:recyc:key").
 					Return([][]byte{
 						marshalInt64(1577840451000000001),
 						nil,
@@ -273,13 +273,13 @@ func TestCacheNS_Get(t *testing.T) {
 			ctx:  context.Background(),
 			cachens: func(ctrl *gomock.Controller) *cachebox.CacheNS {
 				store := mock_cachebox.NewMockStorage(ctrl)
-				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:rk:warmkey").
+				store.EXPECT().MGet(gomock.Any(), "nskey1", "nskey2", "cachebox:recyc:warmkey").
 					Return([][]byte{
 						marshalInt64(1577840451000000001),
 						marshalInt64(1577840461000000001),
 						append(marshalInt64(1577840461000000001), []byte("warm")...),
 					}, nil)
-				store.EXPECT().MGet(gomock.Any(), "cachebox:rk:key").Return([][]byte{
+				store.EXPECT().MGet(gomock.Any(), "cachebox:recyc:key").Return([][]byte{
 					append(marshalInt64(1577840461000000001), []byte("ok")...),
 				}, nil)
 
@@ -410,7 +410,7 @@ func TestCacheNS_Set(t *testing.T) {
 					marshalInt64(1577840461000000001),
 				}, nil)
 				store.EXPECT().Set(gomock.Any(), cachebox.Item{
-					Key:   "cachebox:rk:key",
+					Key:   "cachebox:recyc:key",
 					Value: append(marshalInt64(1577840461000000001), []byte("ok")...),
 					TTL:   time.Minute,
 				})

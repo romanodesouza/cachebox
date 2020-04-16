@@ -168,7 +168,7 @@ func (c *CacheNS) mostRecentTimestamp(ctx context.Context, keys []string, bb [][
 }
 
 func buildRecyclableKey(key string) string {
-	return fmt.Sprintf("cachebox:rk:%s", key)
+	return fmt.Sprintf("cachebox:recyc:%s", key)
 }
 
 func buildVersionedKey(key string, version int64) string {
