@@ -1,6 +1,6 @@
 # cachebox
 
-[![Godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/romanodesouza/cachebox) [![Build Status](https://travis-ci.org/romanodesouza/cachebox.svg?branch=master)](https://travis-ci.org/romanodesouza/cachebox) [![codecov](https://codecov.io/gh/romanodesouza/cachebox/branch/master/graph/badge.svg)](https://codecov.io/gh/romanodesouza/cachebox) [![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/romanodesouza/cachebox/master/LICENSE)
+[![Godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/romanodesouza/cachebox) [![Build Status](https://travis-ci.org/romanodesouza/cachebox.svg?branch=master)](https://travis-ci.org/romanodesouza/cachebox) [![codecov](https://codecov.io/gh/romanodesouza/cachebox/branch/master/graph/badge.svg)](https://codecov.io/gh/romanodesouza/cachebox) [![Go Report Card](https://goreportcard.com/badge/github.com/romanodesouza/cachebox)](https://goreportcard.com/report/github.com/romanodesouza/cachebox) [![license](http://img.shields.io/badge/license-MIT-red.svg?style=flat)](https://raw.githubusercontent.com/romanodesouza/cachebox/master/LICENSE)
 
 A caching library to handle group and individual caches.
 
