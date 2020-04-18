@@ -1,6 +1,6 @@
 # cachebox
 
-[![Build Status](https://travis-ci.org/romanodesouza/cachebox.svg?branch=master)](https://travis-ci.org/romanodesouza/cachebox) [![codecov](https://codecov.io/gh/romanodesouza/cachebox/branch/master/graph/badge.svg)](https://codecov.io/gh/romanodesouza/cachebox)
+[![Godoc](http://img.shields.io/badge/godoc-reference-blue.svg?style=flat)](https://godoc.org/github.com/romanodesouza/cachebox) [![Build Status](https://travis-ci.org/romanodesouza/cachebox.svg?branch=master)](https://travis-ci.org/romanodesouza/cachebox) [![codecov](https://codecov.io/gh/romanodesouza/cachebox/branch/master/graph/badge.svg)](https://codecov.io/gh/romanodesouza/cachebox)
 
 A caching library to handle group and individual caches.
 
