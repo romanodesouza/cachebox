@@ -14,13 +14,21 @@ import (
 
 var _ cachebox.Storage = (*GoMemcache)(nil)
 
+// GoMemcacheClient is the interface that enables instrumentation by callers, wrapping a *memcache.Client on their side.
+type GoMemcacheClient interface {
+	Get(key string) (*memcache.Item, error)
+	GetMulti(keys []string) (map[string]*memcache.Item, error)
+	Set(item *memcache.Item) error
+	Delete(key string) error
+}
+
 // GoMemcache implements the cachebox.Storage interface by wrapping the gomemcache client.
 type GoMemcache struct {
-	client *memcache.Client
+	client GoMemcacheClient
 }
 
 // NewGoMemcache returns a new GoMemcache instance.
-func NewGoMemcache(client *memcache.Client) *GoMemcache {
+func NewGoMemcache(client GoMemcacheClient) *GoMemcache {
 	return &GoMemcache{client: client}
 }
 
