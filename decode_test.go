@@ -64,10 +64,10 @@ func TestUnmarshal(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			name:    "it should return ErrUnmarshalMiss if b is nil",
+			name:    "it should return ErrMiss if b is nil",
 			b:       nil,
 			v:       []byte{},
-			wantErr: cachebox.ErrUnmarshalMiss,
+			wantErr: cachebox.ErrMiss,
 		},
 	}
 

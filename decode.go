@@ -14,14 +14,14 @@ type MsgUnmarshaler interface {
 	UnmarshalMsg([]byte) ([]byte, error)
 }
 
-// ErrUnmarshalMiss represents an error when trying to unmarshal a miss.
-var ErrUnmarshalMiss = errors.New("cachebox: can't unmarshal miss")
+// ErrMiss represents an error when trying to unmarshal a miss.
+var ErrMiss = errors.New("cachebox: can't unmarshal miss")
 
 // Unmarshal decodes a byte slice.
 func Unmarshal(b []byte, v interface{}) error {
 	// Can't decode miss.
 	if b == nil {
-		return ErrUnmarshalMiss
+		return ErrMiss
 	}
 
 	// If it's a []byte, just assign it
