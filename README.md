@@ -1,5 +1,7 @@
 # cachebox
 
+[![Build Status](https://travis-ci.org/romanodesouza/cachebox.svg?branch=master)](https://travis-ci.org/romanodesouza/cachebox) [![codecov](https://codecov.io/gh/romanodesouza/cachebox/branch/master/graph/badge.svg)](https://codecov.io/gh/romanodesouza/cachebox)
+
 A caching library to handle group and individual caches.
 
 Based on [recyclable keys](https://github.com/rails/rails/pull/29092) concept, it uses [namespace](https://github.com/memcached/memcached/wiki/ProgrammingTricks#namespacing) versioning with nano timestamps to invalidate groups of keys.
