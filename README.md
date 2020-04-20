@@ -207,7 +207,7 @@ func (c *CacheRepository) FindIDs(ctx context.Context) ([]int64, error) {
 		nskeys = append(nskeys, "ns:inactiveusers")
 	}
 
-	ns := cache.Namespace(nskeys...)
+	ns := c.cache.Namespace(nskeys...)
 
 	key := "users"
 	reply, err := ns.Get(ctx, key)
@@ -261,7 +261,7 @@ func (c *CacheRepository) FindByIDs(ctx context.Context, ids []int64) ([]*Entity
 		keys[i] = fmt.Sprintf("prefix_%d", id)
 	}
 
-	reply, err := cache.GetMulti(ctx, keys)
+	reply, err := c.cache.GetMulti(ctx, keys)
 	if err != nil {
 		// Something went wrong with cache, log it and fallbacks to next layer
 		c.logger.Error(errors.Wrap(err, "could not retrieve entities from cache"))
