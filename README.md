@@ -6,7 +6,7 @@ A caching library to handle group and individual caches.
 
 > There are only two hard things in Computer Science: cache invalidation and naming things.
 
-Based on [recyclable keys](https://github.com/rails/rails/pull/29092) concept, it uses [namespace](https://github.com/memcached/memcached/wiki/ProgrammingTricks#namespacing) versioning with nano timestamps to invalidate groups of keys.
+cachebox implements [namespace versioning](https://github.com/memcached/memcached/wiki/ProgrammingTricks#namespacing) based on timestamps with nano precision over [recyclable keys](https://github.com/rails/rails/pull/29092) to make it easier to invalidate groups of keys without polluting the keyspace.
 
 ## install
 
@@ -174,7 +174,7 @@ cache := cachebox.NewCache(store)
 Worth saying that when OpenTelemetry gets stable, cachebox will support it.
 
 ## key-based versioning
-Ok, cool, but I prefer key-based versioning so I can visualize better my keyspace.
+Ok, cool, but I still prefer key-based versioning so I can visualize better my keyspace.
 
 ```go
 cache := cachebox.NewCache(store, cachebox.WithKeyBasedExpiration())
