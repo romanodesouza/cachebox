@@ -4,9 +4,9 @@
 
 A caching library to handle group and individual caches.
 
-Based on [recyclable keys](https://github.com/rails/rails/pull/29092) concept, it uses [namespace](https://github.com/memcached/memcached/wiki/ProgrammingTricks#namespacing) versioning with nano timestamps to invalidate groups of keys.
-
 > There are only two hard things in Computer Science: cache invalidation and naming things.
+
+Based on [recyclable keys](https://github.com/rails/rails/pull/29092) concept, it uses [namespace](https://github.com/memcached/memcached/wiki/ProgrammingTricks#namespacing) versioning with nano timestamps to invalidate groups of keys.
 
 ## install
 
@@ -20,6 +20,7 @@ package main
 
 import (
 	"context"
+	"os"
 
 	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/romanodesouza/cachebox"
@@ -59,7 +60,7 @@ func main() {
 	err := cache.Delete(ctx, key)
 	err := cache.DeleteMulti(ctx, keys)
 
-	// Namespacing (when any of these namespace keys get invalidated, also invalidates key)
+	// Namespacing (when any of these namespace keys get invalidated, key is also invalid)
 	ns := cache.Namespace("ns:key1", "ns:key2")
 	reply, err := ns.Get(ctx, key)
 	err := ns.Set(ctx, cachebox.Item{
@@ -83,7 +84,7 @@ func main() {
 ```
 
 ## storage
-It offers built-in support for:
+Built-in support for:
 - [memcached](https://github.com/romanodesouza/cachebox/tree/master/storage/memcached)
 - [redis](https://github.com/romanodesouza/cachebox/tree/master/storage/redis)
 
@@ -171,7 +172,6 @@ cache := cachebox.NewCache(store)
 ```
 
 Worth saying that when OpenTelemetry gets stable, cachebox will support it.
-For now, bringing you own instrumentation sounds the best approach.
 
 ## key-based versioning
 Ok, cool, but I prefer key-based versioning so I can visualize better my keyspace.
@@ -202,14 +202,14 @@ func (c *CacheRepository) FindAll(ctx context.Context) ([]*Entity, error) {
 func (c *CacheRepository) FindIDs(ctx context.Context) ([]int64, error) {
 	// Group caching retrieves a key namespaced by one or many namespace keys.
 	// If the namespace version is newer than key's version, it considers it as cache miss.
-	nskeys := []string{"users"}
-	if include.ActiveUsers {
-		nskeys = append(nskeys, "activeusers")
+	nskeys := []string{"ns:users"}
+	if includeInactive {
+		nskeys = append(nskeys, "ns:inactiveusers")
 	}
 
 	ns := cache.Namespace(nskeys...)
 
-	key := "mykey"
+	key := "users"
 	reply, err := ns.Get(ctx, key)
 	if err != nil {
 		// Something went wrong with cache, log it and falls back to next layer
@@ -218,9 +218,8 @@ func (c *CacheRepository) FindIDs(ctx context.Context) ([]int64, error) {
 	}
 
 	var ids []int64
-	err := cachebox.Unmarshal(reply, &entities)
 
-	if err != nil {
+	if err := cachebox.Unmarshal(reply, &ids); err != nil {
 		if err != cachebox.ErrMiss {
 			c.logger.Error(errors.Wrap(err, "could not deserialize ids"))
 		}
@@ -242,7 +241,7 @@ func (c *CacheRepository) FindIDs(ctx context.Context) ([]int64, error) {
 
 		err = ns.Set(ctx, cachebox.Item{
 			Key: key,
-			value: b,
+			Value: b,
 			TTL: time.Hour,
 		})
 
@@ -257,7 +256,7 @@ func (c *CacheRepository) FindIDs(ctx context.Context) ([]int64, error) {
 func (c *CacheRepository) FindByIDs(ctx context.Context, ids []int64) ([]*Entity, error) {
 	// Individual caching consists in retrieving many items (from database for example) and caching
 	// them one by one individually, this is effective when you have a high number of shared items.
-	keys := make([]string, len(ids)
+	keys := make([]string, len(ids))
 	for i, id := range ids {
 		keys[i] = fmt.Sprintf("prefix_%d", id)
 	}
@@ -265,7 +264,7 @@ func (c *CacheRepository) FindByIDs(ctx context.Context, ids []int64) ([]*Entity
 	reply, err := cache.GetMulti(ctx, keys)
 	if err != nil {
 		// Something went wrong with cache, log it and fallbacks to next layer
-		c.logger.Error(erros.Wrap(err, "could not retrieve entities from cache"))
+		c.logger.Error(errors.Wrap(err, "could not retrieve entities from cache"))
 		return c.repo.FindByIDs(ctx, ids)
 	}
 
@@ -274,8 +273,7 @@ func (c *CacheRepository) FindByIDs(ctx context.Context, ids []int64) ([]*Entity
 	idx := make(map[int64]int)
 
 	for i, b := range reply {
-		err := cachebox.Unmarshal(b, entities[i])
-		if err != nil {
+		if err := cachebox.Unmarshal(b, entities[i]); err != nil {
 			idx[ids[i]] = i
 
 			if err != cachebox.ErrMiss {
@@ -292,7 +290,7 @@ func (c *CacheRepository) FindByIDs(ctx context.Context, ids []int64) ([]*Entity
 			missingIDs = append(missingIDs, id)
 		}
 
-		found, err := c.repo.FindByIDs(ctx, ids)
+		found, err := c.repo.FindByIDs(ctx, missingIDs)
 		if err != nil {
 			c.logger.Error(err)
 			return entities, err
@@ -302,14 +300,16 @@ func (c *CacheRepository) FindByIDs(ctx context.Context, ids []int64) ([]*Entity
 
 		for _, entity := range found {
 			i := idx[entity.ID]
+
 			// Place the found object in the list
 			entities[i] = entity
+
 			// Serialize
 			b, err := cachebox.Marshal(entity)
 			if err != nil {
 				c.logger.Error(errors.Wrap(err, "could not serialize entity"))
 			}
-			// items to cache
+
 			items = append(items, cachebox.Item{
 				Key: keys[i],
 				Value: b,
@@ -333,12 +333,12 @@ func (c *CacheRepository) FindByIDs(ctx context.Context, ids []int64) ([]*Entity
 cache.Delete(ctx, "ns:key1")
 
 // When invalidating an individual item, also invalidate the namespaces it belongs to
-cache.DeleteMulti(ctx, "user_1", "ns:users", "ns:activeusers")
+cache.DeleteMulti(ctx, "user_1", "ns:users", "ns:inactiveusers")
 
 // You could even recompute the individual cache item before invalidating the namespaces
 ctx := cachebox.WithBypass(parent, cachebox.BypassReading)
 _, _ = FindByIDs(ctx, []int64{1})
-cache.DeleteMulti(ctx, "ns:users", "ns:activeusers")
+cache.DeleteMulti(ctx, "ns:users", "ns:inactiveusers")
 ```
 
 ## benchmarks
