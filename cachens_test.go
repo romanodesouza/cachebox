@@ -156,11 +156,12 @@ func TestCacheNS_Get(t *testing.T) {
 						append(marshalInt64(1577840461000000001), []byte("ok")...),
 					}, nil)
 
-				cachebox.Now = func() time.Time {
-					return time.Date(2020, 1, 1, 1, 1, 1, 1, time.UTC)
-				}
+				now := time.Date(2020, 1, 1, 1, 1, 1, 1, time.UTC)
+				cachebox.SetNowFn(func() time.Time {
+					return now
+				})
 				store.EXPECT().Set(gomock.Any(), []cachebox.Item{
-					{Key: "nskey2", Value: marshalInt64(cachebox.Now().UnixNano()), TTL: 12 * time.Hour},
+					{Key: "nskey2", Value: marshalInt64(now.UnixNano()), TTL: 12 * time.Hour},
 				})
 
 				cache := cachebox.NewCache(store)
@@ -183,11 +184,12 @@ func TestCacheNS_Get(t *testing.T) {
 						append(marshalInt64(1577840461000000001), []byte("ok")...),
 					}, nil)
 
-				cachebox.Now = func() time.Time {
-					return time.Date(2020, 1, 1, 1, 1, 1, 1, time.UTC)
-				}
+				now := time.Date(2020, 1, 1, 1, 1, 1, 1, time.UTC)
+				cachebox.SetNowFn(func() time.Time {
+					return now
+				})
 				store.EXPECT().Set(gomock.Any(), []cachebox.Item{
-					{Key: "nskey2", Value: marshalInt64(cachebox.Now().UnixNano()), TTL: time.Hour},
+					{Key: "nskey2", Value: marshalInt64(now.UnixNano()), TTL: time.Hour},
 				})
 
 				cache := cachebox.NewCache(store, cachebox.WithDefaultNamespaceTTL(time.Hour))
@@ -210,11 +212,12 @@ func TestCacheNS_Get(t *testing.T) {
 						append(marshalInt64(1577840461000000001), []byte("ok")...),
 					}, nil)
 
-				cachebox.Now = func() time.Time {
-					return time.Date(2020, 1, 1, 1, 1, 1, 1, time.UTC)
-				}
+				now := time.Date(2020, 1, 1, 1, 1, 1, 1, time.UTC)
+				cachebox.SetNowFn(func() time.Time {
+					return now
+				})
 				store.EXPECT().Set(gomock.Any(), []cachebox.Item{
-					{Key: "nskey2", Value: marshalInt64(cachebox.Now().UnixNano()), TTL: 12 * time.Hour},
+					{Key: "nskey2", Value: marshalInt64(now.UnixNano()), TTL: 12 * time.Hour},
 				}).Return(errors.New("storage: set error"))
 
 				cache := cachebox.NewCache(store)

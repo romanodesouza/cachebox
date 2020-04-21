@@ -11,8 +11,7 @@ import (
 	"time"
 )
 
-//nolint:golint
-var Now = func() time.Time { return time.Now().UTC() }
+var now = func() time.Time { return time.Now().UTC() }
 
 // CacheNS handles namespaced cache calls.
 type CacheNS struct {
@@ -142,7 +141,7 @@ func (c *CacheNS) mostRecentTimestamp(ctx context.Context, keys []string, bb [][
 		var timestamp int64
 
 		if bb[i] == nil {
-			timestamp = Now().UnixNano()
+			timestamp = now().UnixNano()
 
 			items = append(items, Item{
 				Key:   key,

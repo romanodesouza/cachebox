@@ -4,5 +4,12 @@
 
 package cachebox
 
+import "time"
+
 var GzipData = gzipData
 var GunzipData = gunzipData
+
+// Not an export but a little trick to not expose the now var.
+func SetNowFn(fn func() time.Time) {
+	now = fn
+}
