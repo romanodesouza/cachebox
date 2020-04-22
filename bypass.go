@@ -17,7 +17,7 @@ const (
 
 var bypassKey = struct{}{}
 
-// WithBypass returns a new context within a bypass state.
+// WithBypass returns a new context with the provided bypass state.
 //
 // It is possible to bypass just reading or read and writing.
 func WithBypass(parent context.Context, bypass bypass) context.Context {

@@ -12,8 +12,8 @@ import (
 
 // WithKeyLock enables a pessimistic lock when retrieving a value from multiple calls to avoid cache stampede.
 //
-// The first get call which receives a miss returns to the caller and the following get calls are blocked until
-// set is called or context times out.
+// The first get call that receives a cache miss returns to the caller while following get calls are blocked
+// until set is called or context times out.
 func WithKeyLock() func(*Cache) {
 	ct := &contention{
 		items: make(map[string]*item),

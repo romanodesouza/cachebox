@@ -31,7 +31,7 @@ func NewCache(storage Storage, opts ...func(*Cache)) *Cache {
 	return c
 }
 
-// WithDefaultNamespaceTTL sets the ttl for namespace keys.
+// WithDefaultNamespaceTTL sets the ttl value for namespace keys.
 //
 // Default is 12h.
 func WithDefaultNamespaceTTL(ttl time.Duration) func(*Cache) {
@@ -40,17 +40,15 @@ func WithDefaultNamespaceTTL(ttl time.Duration) func(*Cache) {
 
 // WithKeyBasedExpiration enables key-based expiration based on namespace version.
 //
-// Given a key "cachekey" and a namespace "ns" of version "1", the versioned key would be "cachebox:v1:cachekey"
+// Given a key "cachekey" and a namespace "ns" of version "1", the versioned key would be "cachebox:v1:cachekey".
+//
 // Once the namespace gets invalidated, the next formed key could be "cachebox:v2:cachekey" and so on.
-// Versioning is done using unix nano timestamps.
 // By default, this behaviour is disabled in favour of the recyclable keys strategy.
 func WithKeyBasedExpiration() func(*Cache) {
 	return func(c *Cache) { c.recyclable = false }
 }
 
 // Get performs a get call in the cache storage.
-//
-// In case of recompute or bypass, it returns (nil, nil) to fake a miss and skip the call.
 func (c *Cache) Get(ctx context.Context, key string) ([]byte, error) {
 	if bpc := bypassFromContext(ctx); bpc == BypassReading || bpc == BypassReadWriting {
 		return nil, nil
@@ -65,8 +63,6 @@ func (c *Cache) Get(ctx context.Context, key string) ([]byte, error) {
 }
 
 // GetMulti performs a get multi call in the cache storage.
-//
-// In case of recompute or bypass, it returns (nil, nil) to fake a miss and skip the call.
 func (c *Cache) GetMulti(ctx context.Context, keys []string) ([][]byte, error) {
 	if bpc := bypassFromContext(ctx); bpc == BypassReading || bpc == BypassReadWriting {
 		return nil, nil
@@ -81,8 +77,6 @@ func (c *Cache) GetMulti(ctx context.Context, keys []string) ([][]byte, error) {
 }
 
 // Set performs a set call in the cache storage.
-//
-// In case of bypass, it returns nil to skip the call.
 func (c *Cache) Set(ctx context.Context, item Item) error {
 	if bypassFromContext(ctx) == BypassReadWriting {
 		return nil
@@ -92,8 +86,6 @@ func (c *Cache) Set(ctx context.Context, item Item) error {
 }
 
 // SetMulti performs a set multi call in the cache storage.
-//
-// In case of bypass, it returns nil to skip the call.
 func (c *Cache) SetMulti(ctx context.Context, items []Item) error {
 	if bypassFromContext(ctx) == BypassReadWriting {
 		return nil
@@ -103,8 +95,6 @@ func (c *Cache) SetMulti(ctx context.Context, items []Item) error {
 }
 
 // Delete performs a delete call in the cache storage.
-//
-// In case of bypass, it returns nil to skip the call.
 func (c *Cache) Delete(ctx context.Context, key string) error {
 	if bypassFromContext(ctx) == BypassReadWriting {
 		return nil
@@ -114,8 +104,6 @@ func (c *Cache) Delete(ctx context.Context, key string) error {
 }
 
 // DeleteMulti performs a delete multi call in the cache storage.
-//
-// In case of bypass, it returns nil to skip the call.
 func (c *Cache) DeleteMulti(ctx context.Context, keys []string) error {
 	if bypassFromContext(ctx) == BypassReadWriting {
 		return nil

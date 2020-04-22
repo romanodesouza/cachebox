@@ -6,7 +6,7 @@ package cachebox
 
 import "encoding/json"
 
-// MsgMarshaler is the interface that marshals an item in the MessagePack format.
+// MsgMarshaler is the msgp-compatible interface that marshals an item in the MessagePack format.
 type MsgMarshaler interface {
 	MarshalMsg(b []byte) ([]byte, error)
 }

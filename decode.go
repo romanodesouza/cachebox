@@ -9,17 +9,19 @@ import (
 	"errors"
 )
 
-// MsgUnmarshaler is the interface that unmarshals an item in the MessagePack format.
+// MsgUnmarshaler is the msgp-compatible interface that unmarshals an item in the MessagePack format.
 type MsgUnmarshaler interface {
 	UnmarshalMsg([]byte) ([]byte, error)
 }
 
-// ErrMiss represents an error when trying to unmarshal a miss.
-var ErrMiss = errors.New("cachebox: can't unmarshal miss")
+// ErrMiss represents an error when trying to unmarshal a cache miss.
+var ErrMiss = errors.New("cachebox: can't unmarshal cache miss")
 
 // Unmarshal decodes a byte slice.
+//
+// When b is nil (a cache miss) returns ErrMiss error.
 func Unmarshal(b []byte, v interface{}) error {
-	// Can't decode miss.
+	// Can't decode cache miss
 	if b == nil {
 		return ErrMiss
 	}

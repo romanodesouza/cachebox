@@ -81,6 +81,7 @@ func (m *MultiStorage) MGet(ctx context.Context, keys ...string) ([][]byte, erro
 }
 
 // Set performs a set call in all underlying cache storages.
+//
 // Returns early an error whether any of them fail.
 func (m *MultiStorage) Set(ctx context.Context, items ...cachebox.Item) error {
 	for _, storage := range m.storages {
@@ -93,6 +94,7 @@ func (m *MultiStorage) Set(ctx context.Context, items ...cachebox.Item) error {
 }
 
 // Delete performs a delete call in all underlying cache storages.
+//
 // Returns early an error whether any of them fail.
 func (m *MultiStorage) Delete(ctx context.Context, keys ...string) error {
 	for _, storage := range m.storages {

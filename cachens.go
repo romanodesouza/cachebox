@@ -30,7 +30,8 @@ func NewCacheNS(c *Cache, nskeys []string) *CacheNS {
 
 // Get performs a get call in the cache storage, checking the namespace version.
 //
-// In case of recompute or bypass, it returns (nil, nil) to fake a miss and skip the call.
+// On recyclable strategy, compares the namespace version with the given key to confirm a cache hit or miss.
+// On key-based strategy, prefixes the key with the namespace version.
 func (c *CacheNS) Get(ctx context.Context, key string) ([]byte, error) {
 	var b []byte
 
@@ -103,7 +104,8 @@ func (c *CacheNS) Get(ctx context.Context, key string) ([]byte, error) {
 
 // Set performs a set call in the cache storage, handling the namespace version.
 //
-// In case of bypass, it returns nil to skip the call.
+// On recyclable strategy, prepends 8 bytes with the encoded namespace version in the item value as its cache version.
+// On key-based strategy, prefixes the item key with the namespace version.
 func (c *CacheNS) Set(ctx context.Context, item Item) error {
 	if bypassFromContext(ctx) == BypassReadWriting {
 		return nil

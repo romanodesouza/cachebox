@@ -75,7 +75,7 @@ func main() {
 	// Deserialization
 	err := cachebox.Unmarshal(b, &i)
 
-	// Miss check
+	// Cache miss check
 	err := cachebox.Unmarshal(b, &i)
 	if err == cachebox.ErrMiss {
 		// ...
@@ -277,7 +277,7 @@ func (c *CacheRepository) FindByIDs(ctx context.Context, ids []int64) ([]*Entity
 			idx[ids[i]] = i
 
 			if err != cachebox.ErrMiss {
-				// Not a miss, so log the error
+				// Not a cache miss, so log the error
 				c.logger.Error(errors.Wrap(err, "could not deserialize item"))
 			}
 		}

@@ -18,14 +18,14 @@ type Storage interface {
 	Delete(ctx context.Context, keys ...string) error
 }
 
-// Item represents an item to get inserted in the cache storage.
+// Item represents a cache item to be stored.
 type Item struct {
 	Key   string
 	Value []byte
 	TTL   time.Duration
 }
 
-// StorageHooks represents hooks to get executed after or before storage functions.
+// StorageHooks represents hooks to run after or before storage functions.
 type StorageHooks struct {
 	AfterMGet func(ctx context.Context, key string, b []byte) ([]byte, error)
 	BeforeSet func(ctx context.Context, item Item) (Item, error)
@@ -68,7 +68,7 @@ func NewStorageWrapper(storage Storage, hooks ...StorageHooks) *StorageWrapper {
 	return &w
 }
 
-// MGet performs a get multi call in the storage with hooks assigned.
+// MGet performs a get multi call in the storage, with hooks assigned.
 func (w *StorageWrapper) MGet(ctx context.Context, keys ...string) ([][]byte, error) {
 	bb, err := w.Storage.MGet(ctx, keys...)
 	if err != nil {
@@ -91,7 +91,7 @@ func (w *StorageWrapper) MGet(ctx context.Context, keys ...string) ([][]byte, er
 	return bb, nil
 }
 
-// Set performs a set call in the cache storage.
+// Set performs a set call in the cache storage, with hooks assigned.
 func (w *StorageWrapper) Set(ctx context.Context, items ...Item) error {
 	if len(w.beforeSet) > 0 {
 		for i := range items {
