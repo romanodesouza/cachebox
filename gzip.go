@@ -52,11 +52,12 @@ func gzipData(b []byte, level int) ([]byte, error) {
 		return nil, err
 	}
 
-	if _, err := w.Write(b); err != nil {
+	_, err = w.Write(b)
+	_ = w.Close()
+
+	if err != nil {
 		return nil, err
 	}
-
-	_ = w.Close()
 
 	return buf.Bytes(), nil
 }
@@ -72,12 +73,13 @@ func gunzipData(b []byte) ([]byte, error) {
 		return nil, err
 	}
 
+	defer r.Close() //nolint:errcheck
+
 	bw := new(bytes.Buffer)
+
 	if _, err := io.Copy(bw, r); err != nil {
 		return nil, err
 	}
-
-	_ = r.Close()
 
 	return bw.Bytes(), nil
 }
