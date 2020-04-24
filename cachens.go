@@ -138,12 +138,11 @@ func (c *CacheNS) Set(ctx context.Context, item Item) error {
 }
 
 func (c *CacheNS) mostRecentTimestamp(ctx context.Context, keys []string, bb [][]byte) (int64, error) {
+	var timestamp int64
 	var mostRecentTimestamp int64
 	var items []Item
 
 	for i, key := range keys {
-		var timestamp int64
-
 		if bb[i] == nil {
 			timestamp = now().UnixNano()
 
