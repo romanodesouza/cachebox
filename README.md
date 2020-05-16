@@ -163,63 +163,67 @@ func (c *CacheRepository) FindAll(ctx context.Context) ([]*Entity, error) {
 	return c.FindByIDs(ctx, ids)
 }
 
+// FindIDs finds entity ids.
+//
+// Group caching retrieves a key within one or more namespaces.
+// If the namespaces version is newer than key's version, it's a cache miss.
 func (c *CacheRepository) FindIDs(ctx context.Context) ([]int64, error) {
-	// Group caching retrieves a key namespaced by one or many namespace keys.
-	// If the namespace version is newer than key's version, it considers it as cache miss.
 	nskeys := []string{"ns:users"}
 	if includeInactive {
 		nskeys = append(nskeys, "ns:inactiveusers")
 	}
 
 	ns := c.cache.Namespace(nskeys...)
-
 	key := "users"
+
 	reply, err := ns.Get(ctx, key)
 	if err != nil {
-		// Something went wrong with cache, log it and falls back to next layer
-		c.logger.Error(errors.Wrap(err, "could not retrieve ids from cache"))
-		return c.repo.FindIDs(ctx)
+		c.logger.Error(fmt.Errorf("repository/user: could not retrieve ids from cache: %w", err))
 	}
 
 	var ids []int64
+	err = cachebox.Unmarshal(reply, &ids)
 
-	if err := cachebox.Unmarshal(reply, &ids); err != nil {
-		if err != cachebox.ErrMiss {
-			c.logger.Error(errors.Wrap(err, "could not deserialize ids"))
-		}
+	// Hit
+	if err == nil {
+		return ids, nil
+	}
 
-		var err error
+	// Miss
+	c.logger.Error(fmt.Errorf("repository/user: could not deserialize ids: %w", err))
 
-		ids, err = c.repo.FindIDs(ctx)
-		if err != nil {
-			return nil, err
-		}
 
-		var b []byte
-		b, err = cachebox.Marshal(&ids)
-		if err != nil {
-			err = errors.Wrap(err, "could not serialize ids")
-			c.logger.Error(err)
-			return nil, err
-		}
+	// Try to fetch ids from next repository layer
+	ids, err = c.repo.FindIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-		err = ns.Set(ctx, cachebox.Item{
-			Key: key,
-			Value: b,
-			TTL: time.Hour,
-		})
+	var b []byte
+	b, err = cachebox.Marshal(ids)
+	if err != nil {
+		c.logger.Error(fmt.Errorf("repository/user: could not serialize ids: %w", err))
+		return ids, nil
+	}
 
-		if err != nil {
-			c.logger.Error(errors.Wrap(err, "could not cache ids"))
-		}
+	err = ns.Set(ctx, cachebox.Item{
+		Key: key,
+		Value: b,
+		TTL: time.Hour,
+	})
+
+	if err != nil {
+		c.logger.Error(fmt.Errof("repository/user: could not cache ids: %w", err))
 	}
 
 	return ids, nil
 }
 
+// FindByIDs finds entities by ids.
+//
+// Individual caching consists in retrieving many items (from database for example) and caching
+// them one by one individually, this is effective when you have a high number of shared items.
 func (c *CacheRepository) FindByIDs(ctx context.Context, ids []int64) ([]*Entity, error) {
-	// Individual caching consists in retrieving many items (from database for example) and caching
-	// them one by one individually, this is effective when you have a high number of shared items.
 	keys := make([]string, len(ids))
 	for i, id := range ids {
 		keys[i] = fmt.Sprintf("prefix_%d", id)
@@ -227,63 +231,61 @@ func (c *CacheRepository) FindByIDs(ctx context.Context, ids []int64) ([]*Entity
 
 	reply, err := c.cache.GetMulti(ctx, keys)
 	if err != nil {
-		// Something went wrong with cache, log it and fallbacks to next layer
-		c.logger.Error(errors.Wrap(err, "could not retrieve entities from cache"))
-		return c.repo.FindByIDs(ctx, ids)
+		c.logger.Error(fmt.Errorf("repository/user: could not retrieve entities from cache: %w", err))
 	}
 
 	entities := make([]*Entity, len(keys))
-	// Build an inverted index to look up missing items later on
 	idx := make(map[int64]int)
 
 	for i, b := range reply {
-		if err := cachebox.Unmarshal(b, entities[i]); err != nil {
+		err := cachebox.Unmarshal(b, entities[i])
+		
+		if err != nil {
 			idx[ids[i]] = i
-
-			if err != cachebox.ErrMiss {
-				// Not a cache miss, so log the error
-				c.logger.Error(errors.Wrap(err, "could not deserialize item"))
-			}
+			c.logger.Error(fmt.Errorf("repository/user: could not deserialize item from cache: %w", err))
 		}
 	}
 
-	// Checks if it needs to go to next layer to fetch missing items
-	if len(idx) > 0 {
-		missingIDs := make([]int64, 0, len(idx))
-		for id := range idx {
-			missingIDs = append(missingIDs, id)
-		}
+	// Hit
+	if len(idx) == 0 {
+		return entities, nil
+	}
 
-		found, err := c.repo.FindByIDs(ctx, missingIDs)
+	// Miss
+	missingIDs := make([]int64, 0, len(idx))
+	for id := range idx {
+		missingIDs = append(missingIDs, id)
+	}
+
+	// Try to fetch missing items from next repository layer
+	found, err := c.repo.FindByIDs(ctx, missingIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]cachebox.Item, 0, len(found))
+
+	for _, entity := range found {
+		i := idx[entity.ID]
+
+		// Place the found object in the list
+		entities[i] = entity
+
+		b, err := cachebox.Marshal(entity)
 		if err != nil {
-			c.logger.Error(err)
-			return entities, err
+			c.logger.Error(fmt.Errorf("repository/user: could not serialize entity: %w", err))
+			continue
 		}
 
-		items := make([]cachebox.Item, 0, len(found))
+		items = append(items, cachebox.Item{
+			Key: keys[i],
+			Value: b,
+			TTL: time.Hour,
+		})
+	}
 
-		for _, entity := range found {
-			i := idx[entity.ID]
-
-			// Place the found object in the list
-			entities[i] = entity
-
-			// Serialize
-			b, err := cachebox.Marshal(entity)
-			if err != nil {
-				c.logger.Error(errors.Wrap(err, "could not serialize entity"))
-			}
-
-			items = append(items, cachebox.Item{
-				Key: keys[i],
-				Value: b,
-				TTL: time.Hour,
-			})
-		}
-
-		if err := c.cache.SetMulti(ctx, items); err != nil {
-			c.logger.Error(errors.Wrap(err, "could not cache entities"))
-		}
+	if err := c.cache.SetMulti(ctx, items); err != nil {
+		c.logger.Error(fmt.Errorf("repository/user: could not cache entities: %w", err))
 	}
 
 	return entities, nil
