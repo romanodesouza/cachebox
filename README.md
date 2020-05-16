@@ -137,42 +137,6 @@ Too big values? Enable gzip compression.
 cache := cachebox.NewCache(store, cachebox.WithGzipCompression(level))
 ```
 
-## instrumentation
-The built-in storage adapters accepts interfaces so you can wrap their clients to gather metrics and/or do tracing for example.
-```go
-type InstrumentedGoMemcacheClient struct {
-	*memcache.Client
-	stats *mystats.Collector
-}
-
-func NewInstrumentedGoMemcacheClient(client *memcache.Client, stats *mystats.Collector) *InstrumentedGoMemcacheClient {
-	return &InstrumentedGoMemcacheClient{
-		Client: client,
-		stats: stats,
-	}
-}
-
-func (i *InstrumentedGoMemcacheClient) Get(key string) (*memcache.Item, error) {
-	item, err := i.Client.Get(key)
-
-	switch {
-		case err == nil:
-			i.stats.Hit(key)
-		case err == memcache.ErrCacheMiss:
-			i.stats.Miss(key)
-	}
-
-	return item, err
-}
-
-client := NewInstrumentedGoMemcacheClient(NewGoMemcache(), NewStatsCollector())
-store := memcached.NewGoMemcache(client)
-cache := cachebox.NewCache(store)
-
-```
-
-Worth saying that when OpenTelemetry gets stable, cachebox will support it.
-
 ## key-based versioning
 Ok, cool, but I still prefer key-based versioning so I can visualize better my keyspace.
 
@@ -374,8 +338,3 @@ BenchmarkRedigo/cachebox:delete-4            	     889	   1225767 ns/op	    9992
 BenchmarkRedigo/redigo:deletemulti-4         	 3459343	       639 ns/op	     137 B/op	       3 allocs/op
 BenchmarkRedigo/cachebox:deletemulti-4       	 2788777	       752 ns/op	     153 B/op	       3 allocs/op
 ```
-
-## TODO
-
-- [ ] Add OpenTelemetry support
-

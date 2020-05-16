@@ -13,18 +13,13 @@ import (
 
 var _ cachebox.Storage = (*Redigo)(nil)
 
-// RedigoPool is the interface that enables instrumentation by callers, wrapping a *redis.Pool on their side.
-type RedigoPool interface {
-	GetContext(ctx context.Context) (redis.Conn, error)
-}
-
 // Redigo implements the cachebox.Storage interface by wrapping a redigo redis Pool.
 type Redigo struct {
-	pool RedigoPool
+	pool *redis.Pool
 }
 
 // NewRedigo returns a new Redigo instance.
-func NewRedigo(pool RedigoPool) *Redigo {
+func NewRedigo(pool *redis.Pool) *Redigo {
 	return &Redigo{pool: pool}
 }
 
