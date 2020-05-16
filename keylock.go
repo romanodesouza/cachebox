@@ -20,7 +20,7 @@ func WithKeyLock() func(*Cache) {
 	}
 
 	return func(c *Cache) {
-		c.storage = NewStorageWrapper(c.storage, StorageHooks{
+		c.storage = newStorageWrapper(c.storage, StorageHooks{
 			AfterSet:  ct.AfterSet,
 			AfterMGet: ct.AfterMGet,
 		})

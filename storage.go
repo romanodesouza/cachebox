@@ -32,8 +32,8 @@ type StorageHooks struct {
 	AfterSet  func(ctx context.Context, item Item) error
 }
 
-// StorageWrapper holds a storage interface, wrapping hooks over it.
-type StorageWrapper struct {
+// storageWrapper holds a storage interface, wrapping hooks over it.
+type storageWrapper struct {
 	Storage
 
 	afterMGet []func(ctx context.Context, key string, b []byte) ([]byte, error)
@@ -41,11 +41,11 @@ type StorageWrapper struct {
 	afterSet  []func(ctx context.Context, item Item) error
 }
 
-// NewStorageWrapper returns a new StorageWrapper instance.
-func NewStorageWrapper(storage Storage, hooks ...StorageHooks) *StorageWrapper {
-	var w StorageWrapper
+// newStorageWrapper returns a new storageWrapper instance.
+func newStorageWrapper(storage Storage, hooks ...StorageHooks) *storageWrapper {
+	var w storageWrapper
 
-	if sw, ok := storage.(*StorageWrapper); ok {
+	if sw, ok := storage.(*storageWrapper); ok {
 		w = *sw
 	} else {
 		w.Storage = storage
@@ -69,7 +69,7 @@ func NewStorageWrapper(storage Storage, hooks ...StorageHooks) *StorageWrapper {
 }
 
 // MGet performs a get multi call in the storage, with hooks assigned.
-func (w *StorageWrapper) MGet(ctx context.Context, keys ...string) ([][]byte, error) {
+func (w *storageWrapper) MGet(ctx context.Context, keys ...string) ([][]byte, error) {
 	bb, err := w.Storage.MGet(ctx, keys...)
 	if err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func (w *StorageWrapper) MGet(ctx context.Context, keys ...string) ([][]byte, er
 }
 
 // Set performs a set call in the cache storage, with hooks assigned.
-func (w *StorageWrapper) Set(ctx context.Context, items ...Item) error {
+func (w *storageWrapper) Set(ctx context.Context, items ...Item) error {
 	if len(w.beforeSet) > 0 {
 		for i := range items {
 			for _, hook := range w.beforeSet {

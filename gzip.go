@@ -14,7 +14,7 @@ import (
 // WithGzipCompression enables gzip compression of key values.
 func WithGzipCompression(level int) func(c *Cache) {
 	return func(c *Cache) {
-		c.storage = NewStorageWrapper(c.storage, StorageHooks{
+		c.storage = newStorageWrapper(c.storage, StorageHooks{
 			BeforeSet: gzipCompress(level),
 			AfterMGet: gzipUncompress(),
 		})
