@@ -37,7 +37,7 @@ func (i *item) incrPending() { atomic.AddInt32(&i.pending, 1) }
 
 func (i *item) decrPending() { atomic.AddInt32(&i.pending, -1) }
 
-func (i *item) totPending() int32 { return atomic.AddInt32(&i.pending, 0) }
+func (i *item) totPending() int32 { return atomic.LoadInt32(&i.pending) }
 
 // contention represents a thread-safe structure to fetch items with i/o contention.
 type contention struct {
@@ -46,7 +46,7 @@ type contention struct {
 }
 
 func (c *contention) AfterMGet(ctx context.Context, key string, b []byte) ([]byte, error) {
-	// Returns early in case of hit
+	// Return early in case of hit
 	if b != nil {
 		return b, nil
 	}
@@ -73,7 +73,7 @@ func (c *contention) AfterMGet(ctx context.Context, key string, b []byte) ([]byt
 
 	i.decrPending()
 
-	// Deletes the item after all pending blocks have received it
+	// Delete the item after all pending blocks have received it
 	if i.totPending() == 0 {
 		c.delete(key)
 	}
@@ -91,7 +91,7 @@ func (c *contention) AfterSet(_ context.Context, item Item) error {
 	}
 	c.Unlock()
 
-	// Ensure the itme deletion in case of no following gets
+	// Safe check to ensure the item deletion when there are no pending gets anymore
 	if i.totPending() == 0 {
 		c.delete(item.Key)
 	}
