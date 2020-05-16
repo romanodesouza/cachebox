@@ -125,7 +125,7 @@ cache := cachebox.NewCache(store, cachebox.WithKeyLock())
 ```
 
 ## msgp compatibility
-You can use the great [msgp](https://github.com/tinylib/msgp) to serialize/deserialize items.
+If you use [msgp](https://github.com/tinylib/msgp) to serialize/deserialize items, cachebox can reuse their interfaces.
 ```go
 cachebox.Marshal(i) // uses msgp as long i implements its interface
 cachebox.Unmarshal(b, &i) // uses msgp as long *i implements its interface
