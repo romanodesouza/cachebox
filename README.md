@@ -60,7 +60,7 @@ func main() {
 	err := cache.Delete(ctx, key)
 	err := cache.DeleteMulti(ctx, keys)
 
-	// Namespacing (when any of these namespace keys get invalidated, key is also invalid)
+	// Namespacing
 	ns := cache.Namespace("ns:key1", "ns:key2")
 	reply, err := ns.Get(ctx, key)
 	err := ns.Set(ctx, cachebox.Item{
